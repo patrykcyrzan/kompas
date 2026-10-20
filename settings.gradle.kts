@@ -24,6 +24,8 @@ dependencyResolutionManagement {
 rootProject.name = "Kompas"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
+include(":app")
+
 include(":core:model")
 include(":core:data")
 include(":core:designsystem")
