@@ -13,11 +13,13 @@ class DeepLinkResolverTest {
     private data class Item(val id: String) : Destination
     private data object NewItem : Destination
     private data class Search(val query: String?) : Destination
+    private data class Order(val id: Long) : Destination
 
     private val routes = listOf(
-        deepLinkRoute("items/{id}") { Item(it.path("id")) },
+        deepLinkRoute("items/{id}") { p -> p.pathId("id")?.let(::Item) },
         deepLinkRoute("items/new") { NewItem },
         deepLinkRoute("search") { Search(it.query("q")) },
+        deepLinkRoute("orders/{id}") { p -> p.pathLong("id")?.let(::Order) },
     )
 
     private fun resolver(
@@ -86,6 +88,13 @@ class DeepLinkResolverTest {
     fun `uri length limit is enforced`() {
         val limits = DeepLinkLimits(maxUriLength = 20)
         assertEquals(DeepLinkResult.Invalid("URI too long"), resolver(limits = limits).resolve("myapp://search?q=0123456789", External))
+    }
+
+    @Test
+    fun `typed params reject unexpected formats`() {
+        listOf("myapp://items/a.b", "myapp://items/" + "x".repeat(65), "myapp://orders/0", "myapp://orders/-1", "myapp://orders/+1", "myapp://orders/007")
+            .forEach { uri -> assertEquals(uri, DeepLinkResult.NotMatched, resolver().resolve(uri, External)) }
+        assertEquals(Order(7), (resolver().resolve("myapp://orders/7", External) as DeepLinkResult.Navigate).destination)
     }
 
     // --- guards ---

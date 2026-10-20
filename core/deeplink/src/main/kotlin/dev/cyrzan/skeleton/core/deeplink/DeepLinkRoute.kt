@@ -60,6 +60,20 @@ class DeepLinkParams internal constructor(
         requireNotNull(pathParams[name]) { "No placeholder {$name} in pattern" }
 
     fun query(name: String): String? = queryParams[name]
+
+    /**
+     * Placeholder value only if it looks like an identifier: `[A-Za-z0-9_-]`, 1–64 chars.
+     * Prefer this over [path] for anything that ends up in an API call or a database query.
+     */
+    fun pathId(name: String): String? = path(name).takeIf(ID_REGEX::matches)
+
+    /** Placeholder value as a positive number, without signs, leading zeros or other surprises. */
+    fun pathLong(name: String): Long? = path(name).takeIf(POSITIVE_LONG_REGEX::matches)?.toLongOrNull()
+
+    private companion object {
+        val ID_REGEX = Regex("^[A-Za-z0-9_-]{1,64}$")
+        val POSITIVE_LONG_REGEX = Regex("^[1-9][0-9]{0,18}$")
+    }
 }
 
 private val PLACEHOLDER = Regex("^\\{([A-Za-z_][A-Za-z0-9_]*)\\}$")
