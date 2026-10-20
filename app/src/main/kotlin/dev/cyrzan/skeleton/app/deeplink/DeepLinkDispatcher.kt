@@ -32,6 +32,12 @@ internal class DeepLinkDispatcher @Inject constructor(
         return result
     }
 
+    /** Re-dispatches the pending link, if any (and not expired). */
+    fun resumePending(): Pair<DeepLinkSource, DeepLinkResult>? {
+        val pending = pendingLinks.consume() ?: return null
+        return pending.source to dispatch(pending.uri, pending.source)
+    }
+
     /**
      * Only `ACTION_VIEW` + data URI is accepted. Intent extras are deliberately ignored:
      * they are arbitrary, attacker-controlled data.
