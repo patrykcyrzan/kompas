@@ -6,7 +6,7 @@ import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.project
 
 /**
- * `:feature:x:api` – public contract of a feature: navigation keys (and optionally small interfaces).
+ * `:feature:x:api` – public contract of a feature: navigation keys and deep link routes.
  * Lightweight on purpose: no Compose UI, no Hilt. Other features depend ONLY on this module.
  */
 class AndroidFeatureApiConventionPlugin : Plugin<Project> {
@@ -16,6 +16,7 @@ class AndroidFeatureApiConventionPlugin : Plugin<Project> {
 
         dependencies {
             "api"(project(":core:navigation"))
+            "api"(project(":core:deeplink"))
         }
     }
 }
