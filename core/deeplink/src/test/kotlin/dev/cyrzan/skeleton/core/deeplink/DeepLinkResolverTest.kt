@@ -23,11 +23,13 @@ class DeepLinkResolverTest {
     private fun resolver(
         routes: List<DeepLinkRoute> = this.routes,
         guards: List<DeepLinkGuard> = emptyList(),
+        limits: DeepLinkLimits = DeepLinkLimits(),
     ) = DeepLinkResolver(
         origins = listOf(DeepLinkOrigin.Web("app.example.com"), DeepLinkOrigin.CustomScheme("myapp")),
         routes = routes,
         backStackPolicy = RootedBackStackPolicy(Home),
         guards = guards,
+        limits = limits,
     )
 
     // --- matching ---
@@ -59,9 +61,31 @@ class DeepLinkResolverTest {
         ).forEach { uri -> assertEquals(uri, DeepLinkResult.NotMatched, resolver().resolve(uri, External)) }
     }
 
+    // --- input validation ---
+
     @Test
-    fun `malformed uri is invalid`() {
-        assertTrue(resolver().resolve("myapp://items/%zz", External) is DeepLinkResult.Invalid)
+    fun `malformed and suspicious input is invalid before matching`() {
+        listOf(
+            "myapp://items/%zz",                       // broken escape
+            "myapp://items/..",                         // traversal
+            "myapp://items/..%2F..%2Fadmin",            // encoded slash inside a segment
+            "myapp://items/a%5Cb",                      // encoded backslash
+            "myapp://items/a%00b",                      // NUL
+            "myapp://search?q=a%0Ab",                   // newline in query value
+            "myapp://search?q=%E2%80%AEevil",           // bidi override
+            "myapp://items/4 2",                        // raw whitespace
+            "myapp://items/" + "a".repeat(300),         // segment too long
+            "myapp://" + List(20) { "a" }.joinToString("/"),   // too many segments
+            "myapp://search?" + List(40) { "p$it=1" }.joinToString("&"), // too many params
+        ).forEach { uri ->
+            assertTrue("Expected Invalid for $uri", resolver().resolve(uri, External) is DeepLinkResult.Invalid)
+        }
+    }
+
+    @Test
+    fun `uri length limit is enforced`() {
+        val limits = DeepLinkLimits(maxUriLength = 20)
+        assertEquals(DeepLinkResult.Invalid("URI too long"), resolver(limits = limits).resolve("myapp://search?q=0123456789", External))
     }
 
     // --- guards ---

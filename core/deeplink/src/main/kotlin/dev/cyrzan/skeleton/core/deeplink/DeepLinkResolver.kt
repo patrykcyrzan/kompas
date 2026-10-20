@@ -3,13 +3,14 @@ package dev.cyrzan.skeleton.core.deeplink
 /**
  * URI -> decision. Pure logic: it never navigates, the platform adapter executes the [DeepLinkResult].
  *
- * Pipeline: parse -> origin -> route -> guards (by priority) -> back stack policy.
+ * Pipeline: limits -> parse -> origin -> route -> guards (by priority) -> back stack policy.
  */
 class DeepLinkResolver(
     private val origins: List<DeepLinkOrigin>,
     routes: Collection<DeepLinkRoute>,
     private val backStackPolicy: BackStackPolicy,
     guards: Collection<DeepLinkGuard> = emptyList(),
+    private val limits: DeepLinkLimits = DeepLinkLimits(),
 ) {
     private val routes: List<DeepLinkRoute> = routes.sortedWith(DeepLinkRoute.SPECIFICITY)
 
@@ -26,7 +27,9 @@ class DeepLinkResolver(
     }
 
     fun resolve(uri: String, source: DeepLinkSource): DeepLinkResult {
+        limits.validateRaw(uri)?.let { return DeepLinkResult.Invalid(it) }
         val link = DeepLink.parse(uri) ?: return DeepLinkResult.Invalid("Malformed URI")
+        limits.validateParsed(link)?.let { return DeepLinkResult.Invalid(it) }
 
         val (origin, pathSegments) = origins.firstNotNullOfOrNull { origin ->
             origin.pathSegmentsOf(link)?.let { origin to it }
@@ -71,6 +74,6 @@ sealed interface DeepLinkResult {
     /** Valid link, but not ours (unknown origin) or no route matches. */
     data object NotMatched : DeepLinkResult
 
-    /** Malformed input, rejected before matching. */
+    /** Malformed or suspicious input, rejected before matching. */
     data class Invalid(val reason: String) : DeepLinkResult
 }
