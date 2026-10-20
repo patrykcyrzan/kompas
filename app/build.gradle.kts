@@ -7,6 +7,10 @@ plugins {
 android {
     namespace = "dev.cyrzan.skeleton.app"
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "dev.cyrzan.skeleton"
         versionCode = 1
@@ -24,6 +28,7 @@ android {
 dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.core.navigation)
+    implementation(projects.core.deeplink)
 
     // Start destination only.
     implementation(projects.feature.home.api)
@@ -37,4 +42,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+
+    testImplementation(libs.junit)
+    // Feature api modules for the deep link contract test only.
+    testImplementation(projects.feature.details.api)
+    testImplementation(projects.feature.settings.api)
 }
