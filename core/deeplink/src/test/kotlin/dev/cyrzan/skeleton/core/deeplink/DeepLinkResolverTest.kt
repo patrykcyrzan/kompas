@@ -14,6 +14,10 @@ class DeepLinkResolverTest {
     private data object NewItem : Destination
     private data class Search(val query: String?) : Destination
     private data class Order(val id: Long) : Destination
+    private data class Secret(val id: String) : Destination, DebugOnly
+    private data class Payment(val id: String) : Destination, InAppOnly
+    private data class Profile(val id: String) : Destination, RequiresAuthentication
+    private data object Login : Destination
 
     private val routes = listOf(
         deepLinkRoute("items/{id}") { p -> p.pathId("id")?.let(::Item) },
@@ -130,6 +134,32 @@ class DeepLinkResolverTest {
 
         assertEquals(listOf("kill", "auth"), calls)
         assertEquals(DeepLinkResult.Redirect(NewItem, listOf(Home, NewItem), resumable = true), result)
+    }
+
+    @Test
+    fun `built-in guards enforce destination markers`() {
+        var loggedIn = false
+        fun resolver(debug: Boolean) = resolver(
+            routes = listOf(
+                deepLinkRoute("secret/{id}") { Secret(it.path("id")) },
+                deepLinkRoute("pay/{id}") { Payment(it.path("id")) },
+                deepLinkRoute("profile/{id}") { Profile(it.path("id")) },
+            ),
+            guards = listOf(DebugOnlyGuard(debug), InAppOnlyGuard(), AuthenticationGuard({ loggedIn }, Login)),
+        )
+
+        assertTrue(resolver(debug = false).resolve("myapp://secret/1", External) is DeepLinkResult.Rejected)
+        assertTrue(resolver(debug = true).resolve("myapp://secret/1", External) is DeepLinkResult.Navigate)
+
+        assertTrue(resolver(debug = false).resolve("myapp://pay/1", External) is DeepLinkResult.Rejected)
+        assertTrue(resolver(debug = false).resolve("myapp://pay/1", InApp) is DeepLinkResult.Navigate)
+
+        assertEquals(
+            DeepLinkResult.Redirect(Login, listOf(Home, Login), resumable = true),
+            resolver(debug = false).resolve("myapp://profile/1", External),
+        )
+        loggedIn = true
+        assertTrue(resolver(debug = false).resolve("myapp://profile/1", External) is DeepLinkResult.Navigate)
     }
 
     // --- configuration errors ---
