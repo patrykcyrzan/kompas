@@ -1,5 +1,7 @@
 package dev.cyrzan.skeleton.core.deeplink
 
+import dev.cyrzan.skeleton.core.deeplink.DeepLinkSource.External
+import dev.cyrzan.skeleton.core.deeplink.DeepLinkSource.InApp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -20,10 +22,12 @@ class DeepLinkResolverTest {
 
     private fun resolver(
         routes: List<DeepLinkRoute> = this.routes,
+        guards: List<DeepLinkGuard> = emptyList(),
     ) = DeepLinkResolver(
         origins = listOf(DeepLinkOrigin.Web("app.example.com"), DeepLinkOrigin.CustomScheme("myapp")),
         routes = routes,
         backStackPolicy = RootedBackStackPolicy(Home),
+        guards = guards,
     )
 
     // --- matching ---
@@ -31,18 +35,18 @@ class DeepLinkResolverTest {
     @Test
     fun `web and custom scheme resolve to the same result`() {
         val expected = DeepLinkResult.Navigate(Item("42"), listOf(Home, Item("42")))
-        assertEquals(expected, resolver().resolve("https://app.example.com/items/42"))
-        assertEquals(expected, resolver().resolve("myapp://items/42"))
+        assertEquals(expected, resolver().resolve("https://app.example.com/items/42", External))
+        assertEquals(expected, resolver().resolve("myapp://items/42", External))
     }
 
     @Test
     fun `literal segment wins over placeholder regardless of declaration order`() {
-        assertEquals(NewItem, (resolver().resolve("myapp://items/new") as DeepLinkResult.Navigate).destination)
+        assertEquals(NewItem, (resolver().resolve("myapp://items/new", External) as DeepLinkResult.Navigate).destination)
     }
 
     @Test
     fun `query parameters are available to the factory`() {
-        assertEquals(Search("kot"), (resolver().resolve("myapp://search?q=kot&utm=x") as DeepLinkResult.Navigate).destination)
+        assertEquals(Search("kot"), (resolver().resolve("myapp://search?q=kot&utm=x", External) as DeepLinkResult.Navigate).destination)
     }
 
     @Test
@@ -52,12 +56,47 @@ class DeepLinkResolverTest {
             "http://app.example.com/items/42",
             "myapp://items/42/extra",
             "myapp://nope",
-        ).forEach { uri -> assertEquals(uri, DeepLinkResult.NotMatched, resolver().resolve(uri)) }
+        ).forEach { uri -> assertEquals(uri, DeepLinkResult.NotMatched, resolver().resolve(uri, External)) }
     }
 
     @Test
     fun `malformed uri is invalid`() {
-        assertTrue(resolver().resolve("myapp://items/%zz") is DeepLinkResult.Invalid)
+        assertTrue(resolver().resolve("myapp://items/%zz", External) is DeepLinkResult.Invalid)
+    }
+
+    // --- guards ---
+
+    @Test
+    fun `guard can reject a destination`() {
+        val guard = DeepLinkGuard { if (it.destination == NewItem) DeepLinkGuard.Decision.Reject("internal") else DeepLinkGuard.Decision.Allow }
+        assertEquals(DeepLinkResult.Rejected(NewItem, "internal"), resolver(guards = listOf(guard)).resolve("myapp://items/new", External))
+    }
+
+    @Test
+    fun `guard sees source and origin`() {
+        var seen: DeepLinkRequest? = null
+        val guard = DeepLinkGuard { seen = it; DeepLinkGuard.Decision.Allow }
+        resolver(guards = listOf(guard)).resolve("https://app.example.com/items/1", InApp)
+        assertEquals(DeepLinkRequest(Item("1"), InApp, DeepLinkOrigin.Web("app.example.com")), seen)
+    }
+
+    @Test
+    fun `guards run by priority and first non-allow decision wins`() {
+        val calls = mutableListOf<String>()
+        fun guard(name: String, priority: Int, decision: DeepLinkGuard.Decision) = object : DeepLinkGuard {
+            override val priority = priority
+            override fun check(request: DeepLinkRequest): DeepLinkGuard.Decision { calls += name; return decision }
+        }
+        val result = resolver(
+            guards = listOf(
+                guard("late", GuardPriority.DEFAULT, DeepLinkGuard.Decision.Reject("late")),
+                guard("auth", GuardPriority.AUTHENTICATION, DeepLinkGuard.Decision.Redirect(NewItem)),
+                guard("kill", GuardPriority.KILL_SWITCH, DeepLinkGuard.Decision.Allow),
+            ),
+        ).resolve("myapp://items/1", External)
+
+        assertEquals(listOf("kill", "auth"), calls)
+        assertEquals(DeepLinkResult.Redirect(NewItem, listOf(Home, NewItem), resumable = true), result)
     }
 
     // --- configuration errors ---
@@ -65,7 +104,7 @@ class DeepLinkResolverTest {
     @Test
     fun `root destination is not duplicated`() {
         val resolver = resolver(routes = listOf(deepLinkRoute("home") { Home }))
-        assertEquals(DeepLinkResult.Navigate(Home, listOf(Home)), resolver.resolve("myapp://home"))
+        assertEquals(DeepLinkResult.Navigate(Home, listOf(Home)), resolver.resolve("myapp://home", External))
     }
 
     @Test
