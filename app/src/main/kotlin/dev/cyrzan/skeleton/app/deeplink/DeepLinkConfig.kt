@@ -5,7 +5,6 @@ import dev.cyrzan.skeleton.core.deeplink.DeepLinkOrigin
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkResolver
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkRoute
 import dev.cyrzan.skeleton.core.deeplink.RootedBackStackPolicy
-import dev.cyrzan.skeleton.feature.home.api.HomeNavKey
 
 /**
  * App-wide deep link configuration. Must stay in sync with the intent filters in AndroidManifest.xml.
@@ -23,6 +22,6 @@ internal fun createDeepLinkResolver(
 ) = DeepLinkResolver(
     origins = DEEP_LINK_ORIGINS,
     routes = routes,
-    backStackPolicy = RootedBackStackPolicy(root = HomeNavKey),
+    backStackPolicy = RootedBackStackPolicy(root = LegacyDestination.Home),
     guards = guards,
 )

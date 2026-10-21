@@ -30,11 +30,10 @@ dependencies {
     implementation(projects.core.navigation)
     implementation(projects.core.deeplink)
 
-    // Start destination only.
-    implementation(projects.feature.home.api)
-
-    // impl modules are wired in purely through Hilt multibindings (Set<EntryProviderInstaller>).
-    implementation(projects.feature.home.impl)
+    // New Compose features, shown inside the legacy app through ComposeHostFragment.
+    // (:feature:home is not wired here – in this simulation Home is still a legacy Fragment.)
+    implementation(projects.feature.details.api)
+    implementation(projects.feature.settings.api)
     implementation(projects.feature.details.impl)
     implementation(projects.feature.settings.impl)
 
@@ -43,8 +42,9 @@ dependencies {
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
+    // The "old" navigation of the monolith.
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.navigation.fragment)
+
     testImplementation(libs.junit)
-    // Feature api modules for the deep link contract test only.
-    testImplementation(projects.feature.details.api)
-    testImplementation(projects.feature.settings.api)
 }

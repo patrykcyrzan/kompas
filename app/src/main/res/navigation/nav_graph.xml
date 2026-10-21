@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The "old" navigation of the monolith.
+
+    Deliberately NO <deepLink> elements: NavController would handle them on its own (handleDeepLink)
+    and open screens bypassing the resolver, i.e. without guards, limits and argument validation.
+    All links go through DeepLinkDispatcher -> LegacyDeepLinkNavigator instead.
+-->
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="dev.cyrzan.skeleton.app.legacy.HomeFragment"
+        android:label="Home" />
+
+    <fragment
+        android:id="@+id/orderDetailsFragment"
+        android:name="dev.cyrzan.skeleton.app.legacy.OrderDetailsFragment"
+        android:label="Order">
+        <argument
+            android:name="orderId"
+            app:argType="long" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="dev.cyrzan.skeleton.app.legacy.ProfileFragment"
+        android:label="Profile" />
+
+    <!-- Hosts new Compose features (Navigation 3) inside the legacy graph. -->
+    <fragment
+        android:id="@+id/composeHostFragment"
+        android:name="dev.cyrzan.skeleton.app.compose.ComposeHostFragment"
+        android:label="Compose" />
+</navigation>
