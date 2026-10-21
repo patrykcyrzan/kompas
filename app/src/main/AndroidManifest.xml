@@ -8,7 +8,9 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
-        <!-- singleTop: a deep link to a running app arrives in onNewIntent instead of a new Activity. -->
+        <!-- singleTop: a deep link to a running app arrives in onNewIntent instead of a new Activity.
+             No <nav-graph> element here on purpose: it would generate intent filters from <deepLink>
+             entries of nav_graph.xml and let NavController open links bypassing the resolver. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -35,6 +37,11 @@
                 <data android:scheme="kompas" />
             </intent-filter>
         </activity>
+
+        <!-- Legacy login screen. Not exported: reachable only from inside the app. -->
+        <activity
+            android:name=".legacy.LoginActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

@@ -12,8 +12,10 @@ ksp = "2.3.12"
 # AndroidX / Compose
 androidxActivity = "1.13.0"
 androidxCore = "1.19.1"
+androidxFragment = "1.9.1"
 androidxHilt = "1.4.0"
 androidxLifecycle = "2.11.0"
+androidxNavigation = "2.10.2"
 androidxNavigation3 = "1.2.0"
 composeBom = "2026.09.00"
 
@@ -29,6 +31,8 @@ junit = "4.13.2"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivity" }
+androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "androidxFragment" }
+androidx-navigation-fragment = { module = "androidx.navigation:navigation-fragment", version.ref = "androidxNavigation" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidxLifecycle" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidxLifecycle" }

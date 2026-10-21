@@ -2,6 +2,8 @@
 
 Ten dokument opisuje, jak działają deeplinki w projekcie: **po co powstał ten mechanizm, co dokładnie dzieje się od kliknięcia linku do pokazania ekranu, jak jest zabezpieczony, jak wygląda struktura kodu i jak go używać**.
 
+> Aplikacja z kodem legacy (Fragmenty, `NavController`, `nav_graph.xml`)? Zobacz [deeplinks-legacy.md](deeplinks-legacy.md).
+
 ---
 
 ## Spis treści
