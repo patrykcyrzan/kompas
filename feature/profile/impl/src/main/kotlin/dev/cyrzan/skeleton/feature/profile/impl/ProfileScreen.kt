@@ -16,23 +16,55 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
+@Composable
+internal fun ProfileRoute(
+    onSignInClick: () -> Unit,
+    onOrdersClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onAboutClick: () -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel(),
+) {
+    val isSignedIn by viewModel.isSignedIn.collectAsStateWithLifecycle()
+    ProfileScreen(
+        isSignedIn = isSignedIn,
+        onSignInClick = onSignInClick,
+        onSignOutClick = viewModel::signOut,
+        onOrdersClick = onOrdersClick,
+        onSettingsClick = onSettingsClick,
+        onAboutClick = onAboutClick,
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ProfileScreen(
+    isSignedIn: Boolean,
+    onSignInClick: () -> Unit,
+    onSignOutClick: () -> Unit,
     onOrdersClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
 ) {
     Scaffold(topBar = { TopAppBar(title = { Text("Profile") }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            ListItem(headlineContent = { Text("Jan Kowalski") }, supportingContent = { Text("jan@example.com") })
-            HorizontalDivider()
+            if (isSignedIn) {
+                ListItem(headlineContent = { Text("Jan Kowalski") }, supportingContent = { Text("jan@example.com") })
+                HorizontalDivider()
+            } else {
+                ProfileRow("Sign in", "Full screen, above the tabs", onSignInClick)
+            }
             ProfileRow("My orders", "Switches to the Orders tab", onOrdersClick)
             ProfileRow("Settings", "Pushed on the Profile tab", onSettingsClick)
             ProfileRow("About", "Pushed on the Profile tab", onAboutClick)
+            if (isSignedIn) {
+                ProfileRow("Sign out", "Resets every tab", onSignOutClick)
+            }
         }
     }
 }

@@ -29,6 +29,7 @@ dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.core.navigation)
     implementation(projects.core.deeplink)
+    implementation(projects.core.data)
 
     // Tab roots and the deep link hierarchy (which tab a screen belongs to) are app-level decisions.
     implementation(projects.feature.home.api)
@@ -36,6 +37,7 @@ dependencies {
     implementation(projects.feature.settings.api)
     implementation(projects.feature.orders.api)
     implementation(projects.feature.profile.api)
+    implementation(projects.feature.auth.api)
 
     // impl modules are wired in purely through Hilt multibindings (Set<EntryProviderInstaller>).
     implementation(projects.feature.home.impl)
@@ -43,6 +45,7 @@ dependencies {
     implementation(projects.feature.settings.impl)
     implementation(projects.feature.orders.impl)
     implementation(projects.feature.profile.impl)
+    implementation(projects.feature.auth.impl)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

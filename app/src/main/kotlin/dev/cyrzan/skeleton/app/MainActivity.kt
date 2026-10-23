@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import dagger.hilt.android.AndroidEntryPoint
 import dev.cyrzan.skeleton.app.deeplink.DeepLinkDispatcher
 import dev.cyrzan.skeleton.app.navigation.SkeletonNavHost
+import dev.cyrzan.skeleton.core.data.repository.SessionRepository
 import dev.cyrzan.skeleton.core.designsystem.theme.SkeletonTheme
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.feature.home.api.HomeNavKey
@@ -23,6 +24,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     internal lateinit var deepLinkDispatcher: DeepLinkDispatcher
+
+    @Inject
+    lateinit var session: SessionRepository
 
     /** Links arriving while the Activity is alive (singleTop -> onNewIntent). */
     private val externalLinks = Channel<String>(Channel.CONFLATED)
@@ -45,6 +49,7 @@ class MainActivity : ComponentActivity() {
                     deepLinkDispatcher = deepLinkDispatcher,
                     startBackStack = startBackStack,
                     externalLinks = links,
+                    isSignedIn = session.isSignedIn,
                 )
             }
         }

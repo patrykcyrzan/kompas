@@ -15,6 +15,9 @@ import dev.cyrzan.skeleton.core.navigation.AppNavDisplay
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.rememberNavigationState
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 
 @Composable
 internal fun SkeletonNavHost(
@@ -22,6 +25,7 @@ internal fun SkeletonNavHost(
     deepLinkDispatcher: DeepLinkDispatcher,
     startBackStack: List<NavKey>,
     externalLinks: Flow<String>,
+    isSignedIn: StateFlow<Boolean>,
     modifier: Modifier = Modifier,
 ) {
     val state = rememberNavigationState(TopLevelTab.roots, startBackStack, ::isFullScreen)
@@ -29,6 +33,11 @@ internal fun SkeletonNavHost(
 
     LaunchedEffect(navigator, externalLinks) {
         externalLinks.collect(navigator::openExternalLink)
+    }
+
+    // Sign-out: nothing of the previous user may stay on any stack (also on tabs nobody looks at).
+    LaunchedEffect(state, isSignedIn) {
+        isSignedIn.drop(1).filter { signedIn -> !signedIn }.collect { state.resetAll() }
     }
 
     AppNavDisplay(
