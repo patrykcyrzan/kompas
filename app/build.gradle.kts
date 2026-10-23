@@ -30,13 +30,19 @@ dependencies {
     implementation(projects.core.navigation)
     implementation(projects.core.deeplink)
 
-    // Start destination only.
+    // Tab roots and the deep link hierarchy (which tab a screen belongs to) are app-level decisions.
     implementation(projects.feature.home.api)
+    implementation(projects.feature.details.api)
+    implementation(projects.feature.settings.api)
+    implementation(projects.feature.orders.api)
+    implementation(projects.feature.profile.api)
 
     // impl modules are wired in purely through Hilt multibindings (Set<EntryProviderInstaller>).
     implementation(projects.feature.home.impl)
     implementation(projects.feature.details.impl)
     implementation(projects.feature.settings.impl)
+    implementation(projects.feature.orders.impl)
+    implementation(projects.feature.profile.impl)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
@@ -44,7 +50,4 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
     testImplementation(libs.junit)
-    // Feature api modules for the deep link contract test only.
-    testImplementation(projects.feature.details.api)
-    testImplementation(projects.feature.settings.api)
 }

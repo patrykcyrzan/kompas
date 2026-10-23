@@ -1,5 +1,6 @@
 package dev.cyrzan.skeleton.app.deeplink
 
+import dev.cyrzan.skeleton.app.navigation.TopLevelTab
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkResult
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkSource
 import dev.cyrzan.skeleton.core.deeplink.Destination
@@ -7,6 +8,12 @@ import dev.cyrzan.skeleton.feature.details.api.DetailsDeepLinks
 import dev.cyrzan.skeleton.feature.details.api.DetailsNavKey
 import dev.cyrzan.skeleton.feature.home.api.HomeDeepLinks
 import dev.cyrzan.skeleton.feature.home.api.HomeNavKey
+import dev.cyrzan.skeleton.feature.orders.api.OrderDetailsNavKey
+import dev.cyrzan.skeleton.feature.orders.api.OrdersDeepLinks
+import dev.cyrzan.skeleton.feature.orders.api.OrdersNavKey
+import dev.cyrzan.skeleton.feature.profile.api.AboutNavKey
+import dev.cyrzan.skeleton.feature.profile.api.ProfileDeepLinks
+import dev.cyrzan.skeleton.feature.profile.api.ProfileNavKey
 import dev.cyrzan.skeleton.feature.settings.api.SettingsDeepLinks
 import dev.cyrzan.skeleton.feature.settings.api.SettingsNavKey
 import org.junit.Assert.assertEquals
@@ -16,30 +23,53 @@ import org.junit.Test
 /** Public URLs are a contract (emails, push, web) – changing what they open must be deliberate. */
 class DeepLinkContractTest {
 
-    private val resolver = createDeepLinkResolver(
-        routes = listOf(HomeDeepLinks.home, DetailsDeepLinks.item, SettingsDeepLinks.settings),
+    private val routes = listOf(
+        HomeDeepLinks.home,
+        DetailsDeepLinks.item,
+        SettingsDeepLinks.settings,
+        OrdersDeepLinks.orders,
+        OrdersDeepLinks.orderDetails,
+        ProfileDeepLinks.profile,
+        ProfileDeepLinks.about,
     )
 
+    private val resolver = createDeepLinkResolver(routes = routes)
+
+    /** The first element is the tab the link opens on. */
     private val contract = mapOf<String, List<Destination>>(
         "https://kompas.example.com/home" to listOf(HomeNavKey),
         "https://kompas.example.com/items/42" to listOf(HomeNavKey, DetailsNavKey("42")),
         "kompas://items/42?utm_source=mail" to listOf(HomeNavKey, DetailsNavKey("42")),
-        "kompas://settings" to listOf(HomeNavKey, SettingsNavKey),
+        "kompas://orders" to listOf(OrdersNavKey),
+        "kompas://orders/1001" to listOf(OrdersNavKey, OrderDetailsNavKey(1001)),
+        "kompas://profile" to listOf(ProfileNavKey),
+        "kompas://settings" to listOf(ProfileNavKey, SettingsNavKey),
+        "kompas://about" to listOf(ProfileNavKey, AboutNavKey),
     )
 
     @Test
-    fun `public urls open the expected back stack`() {
+    fun `public urls open the expected tab and back stack`() {
         contract.forEach { (uri, backStack) ->
             assertEquals(uri, DeepLinkResult.Navigate(backStack.last(), backStack), resolver.resolve(uri, DeepLinkSource.External))
         }
     }
 
     @Test
-    fun `item ids are strictly validated`() {
-        listOf("kompas://items/..", "kompas://items/1%2F..%2Fadmin", "kompas://items/a.b", "kompas://items/%27%20OR%201%3D1")
-            .forEach { uri ->
-                val result = resolver.resolve(uri, DeepLinkSource.External)
-                assertTrue("$uri -> $result", result is DeepLinkResult.Invalid || result == DeepLinkResult.NotMatched)
-            }
+    fun `every hierarchy ends at a tab root`() {
+        contract.values.flatten().forEach { destination ->
+            val root = generateSequence(destination, ::parentOf).last()
+            assertTrue("$destination -> $root", TopLevelTab.roots.any { it == root })
+        }
+    }
+
+    @Test
+    fun `ids are strictly validated`() {
+        listOf(
+            "kompas://items/..", "kompas://items/1%2F..%2Fadmin", "kompas://items/a.b", "kompas://items/%27%20OR%201%3D1",
+            "kompas://orders/abc", "kompas://orders/-1", "kompas://orders/007",
+        ).forEach { uri ->
+            val result = resolver.resolve(uri, DeepLinkSource.External)
+            assertTrue("$uri -> $result", result is DeepLinkResult.Invalid || result == DeepLinkResult.NotMatched)
+        }
     }
 }
