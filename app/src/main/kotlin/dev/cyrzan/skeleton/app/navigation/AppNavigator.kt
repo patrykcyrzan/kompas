@@ -7,22 +7,22 @@ import dev.cyrzan.skeleton.app.deeplink.toNavKey
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkResult
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkSource
 import dev.cyrzan.skeleton.core.deeplink.Destination
+import dev.cyrzan.skeleton.core.navigation.NavigationState
 import dev.cyrzan.skeleton.core.navigation.Navigator
 import dev.cyrzan.skeleton.core.navigation.OpenLinkResult
-import dev.cyrzan.skeleton.core.navigation.TabbedBackStack
 
-/** The [Navigator] features get: back stack operations + links, all going through the deep link pipeline. */
+/** The [Navigator] features get: [NavigationState] operations + links, all going through the deep link pipeline. */
 @Stable
 internal class AppNavigator(
-    private val tabs: TabbedBackStack,
+    private val state: NavigationState,
     private val deepLinks: DeepLinkDispatcher,
 ) : Navigator {
 
-    override fun navigate(key: NavKey) = tabs.navigate(key)
+    override fun navigate(key: NavKey) = state.navigate(key)
 
-    override fun goBack(): Boolean = tabs.goBack()
+    override fun goBack(): Boolean = state.goBack()
 
-    override fun resetTo(keys: List<NavKey>) = tabs.resetTo(keys)
+    override fun closeFlow() = state.closeFlow()
 
     override fun openLink(uri: String): OpenLinkResult =
         apply(deepLinks.dispatch(uri, DeepLinkSource.InApp), DeepLinkSource.InApp)
@@ -45,17 +45,17 @@ internal class AppNavigator(
     }
 
     /**
-     * External link: the user comes from outside – select the tab the link belongs to and show
-     * the whole synthetic stack there (other tabs keep their history).
-     * In-app link: the user is in the middle of something – push the target on top of the current
-     * tab, so "back" returns them. A tab root switches tabs instead.
+     * External link: the user comes from outside – show the whole synthetic stack on the tab the
+     * link belongs to (other tabs keep their history); full-screen screens open above it.
+     * In-app link: the user is in the middle of something – push the target like any [navigate],
+     * so "back" returns them.
      */
     private fun show(destination: Destination, syntheticBackStack: List<Destination>, source: DeepLinkSource): OpenLinkResult {
         when (source) {
-            DeepLinkSource.External -> tabs.resetTo(syntheticBackStack.map(Destination::toNavKey))
+            DeepLinkSource.External -> state.resetTo(syntheticBackStack.map(Destination::toNavKey))
             DeepLinkSource.InApp -> {
                 val key = destination.toNavKey()
-                if (tabs.current != key) tabs.navigate(key)
+                if (state.current != key) state.navigate(key)
             }
         }
         return OpenLinkResult.Opened

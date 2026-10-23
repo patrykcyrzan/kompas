@@ -74,6 +74,12 @@ class TabbedBackStack(
         else -> false
     }
 
+    /** Every tab back to its root, start tab selected – e.g. after sign-out. */
+    fun resetAll() {
+        tabs.forEach { tab -> stackOf(tab).resetTo(listOf(tab)) }
+        selectedIndex.intValue = 0
+    }
+
     /**
      * Replaces the stack of the tab [keys] start with and selects that tab. Other tabs are untouched.
      * [keys] must start with a tab root – that's how a deep link says which tab it belongs to.

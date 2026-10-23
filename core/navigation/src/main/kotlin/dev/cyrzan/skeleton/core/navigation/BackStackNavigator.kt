@@ -33,10 +33,15 @@ class BackStackNavigator(
      */
     fun resetTo(keys: List<NavKey>) {
         require(keys.isNotEmpty()) { "Back stack cannot be empty" }
-        val commonPrefix = backStack.zip(keys).takeWhile { (current, new) -> current == new }.size
-        while (backStack.size > commonPrefix) backStack.removeAt(backStack.lastIndex)
-        backStack.addAll(keys.drop(commonPrefix))
+        backStack.replaceWith(keys)
     }
+}
+
+/** Replaces the content with [keys], leaving the common prefix (and its state) untouched. */
+internal fun MutableList<NavKey>.replaceWith(keys: List<NavKey>) {
+    val commonPrefix = zip(keys).takeWhile { (current, new) -> current == new }.size
+    while (size > commonPrefix) removeAt(lastIndex)
+    addAll(keys.drop(commonPrefix))
 }
 
 /**
