@@ -2,6 +2,8 @@
 
 Ten dokument opisuje, jak działają deeplinki w projekcie: **po co powstał ten mechanizm, co dokładnie dzieje się od kliknięcia linku do pokazania ekranu, jak jest zabezpieczony, jak wygląda struktura kodu i jak go używać**.
 
+> Zakładki, przepływy pełnoekranowe (np. logowanie), opakowanie Navigation 3 i blokada aplikacji są opisane w [navigation.md](navigation.md). Tam też jest wyjaśnione, na której zakładce ląduje ekran otwarty z linku.
+
 ---
 
 ## Spis treści
@@ -90,7 +92,7 @@ Navigation 3 (1.2.0) ma wbudowane API deeplinków (`androidx.navigation3.runtime
 | `DeepLinkResolver` | Składa wszystko: URI + źródło → `DeepLinkResult`. | `core:deeplink` |
 | `DeepLinkResult` | `Navigate` / `Redirect` / `Rejected` / `NotMatched` / `Invalid`. | `core:deeplink` |
 | `DeepLinkDispatcher` | Adapter Androida: Intent → URI, wywołanie resolvera, bezpieczne logi, zapis odłożonego linku. | `:app` |
-| `Navigator` | API dla feature'ów: `navigate`, `goBack`, `resetTo`, **`openLink`**, **`resumePendingLink`**. | `core:navigation` |
+| `Navigator` | API dla feature'ów: `navigate`, `goBack`, `closeFlow`, **`openLink`**, **`resumePendingLink`**. | `core:navigation` |
 | `AppNavigator` | Implementacja `Navigator` w `:app` – wykonuje wyniki resolvera na back stacku. | `:app` |
 | `NavKey` | Klucz nawigacji Navigation 3. Nasze klucze implementują **jednocześnie** `NavKey` i `Destination`. | `feature:*:api` |
 
@@ -145,7 +147,10 @@ project/
 │   │
 │   └── navigation/src/main/kotlin/.../core/navigation/
 │       ├── Navigator.kt                           API dla feature'ów + OpenLinkResult
-│       └── BackStackNavigator.kt                  operacje na NavBackStack + rememberBackStackNavigator()
+│       ├── BackStackNavigator.kt                  operacje na NavBackStack + rememberBackStackNavigator()
+│       ├── TabbedBackStack.kt                     stos per zakładka (patrz navigation.md)
+│       ├── NavigationState.kt                     zakładki + flow; resetTo(syntetyczny stos)
+│       └── AppNavDisplay.kt                       Nav3 NavDisplay + pasek zakładek
 │
 ├── feature/
 │   └── details/
@@ -411,6 +416,8 @@ class RootedBackStackPolicy(private val root: Destination) : BackStackPolicy {
 
 **Dlaczego centralnie?** Gdyby `details:api` samo deklarowało „pode mną jest Home”, musiałoby zależeć od `home:api` – feature'y zaczęłyby się znać.
 
+Aplikacja z zakładkami używa `ParentBackStackPolicy(::parentOf)`: stos to łańcuch rodziców, a pierwszy element (korzeń zakładki) mówi, którą zakładkę wybrać. Szczegóły: [navigation.md, rozdział 5](navigation.md#5-gdzie-ląduje-nowy-ekran).
+
 ### 6.7 `DeepLinkResolver` i `DeepLinkResult`
 
 ```kotlin
@@ -440,8 +447,8 @@ sealed interface DeepLinkResult {
 
 | Wynik | `External` | `InApp` | `OpenLinkResult` |
 |---|---|---|---|
-| `Navigate` | `resetTo(backStack)` | `navigate(destination)` (bez duplikatu, jeśli już na wierzchu) | `Opened` |
-| `Redirect` | `resetTo(backStack)` | `navigate(destination)` | `Opened` |
+| `Navigate` | `NavigationState.resetTo(backStack)` | `navigate(destination)` (bez duplikatu, jeśli już na wierzchu) | `Opened` |
+| `Redirect` | `NavigationState.resetTo(backStack)` | `navigate(destination)` | `Opened` |
 | `Rejected` | nic | nic | `Blocked` |
 | `NotMatched` / `Invalid` | nic | nic | `Unsupported` |
 
@@ -452,8 +459,8 @@ sealed interface DeepLinkResult {
 | `MainActivity.onCreate` | gdy `savedInstanceState == null`: link z Intentu → `startBackStack` |
 | `MainActivity.onNewIntent` | URI → `Channel` |
 | `SkeletonNavHost` | tworzy `AppNavigator`; `LaunchedEffect { externalLinks.collect(navigator::openExternalLink) }` |
-| `rememberBackStackNavigator(startBackStack)` | używa stosu startowego tylko przy pierwszym utworzeniu |
-| `BackStackNavigator.resetTo(keys)` | podmienia stos, zachowując wspólny prefiks |
+| `rememberNavigationState(..., startBackStack, ...)` | używa stosu startowego tylko przy pierwszym utworzeniu |
+| `NavigationState.resetTo(keys)` | wybiera zakładkę i podmienia jej stos (wspólny prefiks zostaje); ekrany pełnoekranowe trafiają na flow |
 | `AndroidManifest.xml` | `singleTop` + `intent-filter` dla `https://app.example.com` i `myapp://` |
 
 ---
