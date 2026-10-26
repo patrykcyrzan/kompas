@@ -3,6 +3,7 @@
 Ten dokument opisuje, **jak zbudowana jest nawigacja w aplikacji z dolnymi zakładkami**: jaki jest model stanu, jak zachowuje się przy każdej akcji użytkownika, jak jest opakowany Navigation 3, gdzie lądują ekrany otwierane z linków, czym są przepływy pełnoekranowe i jak działa blokada PIN po powrocie z tła.
 
 Deeplinki (parser, guardy, polityka back stacku) mają osobny dokument: [deeplinks.md](deeplinks.md).
+Przekazywanie argumentów, typowane ID i zwracanie wyników między ekranami: [navigation-arguments.md](navigation-arguments.md).
 
 ---
 
@@ -80,7 +81,7 @@ AppNavDisplay  (core:navigation, Compose)        ← rysuje stan przez Nav3 NavD
 
 | Klasa / plik | Moduł | Odpowiedzialność |
 |---|---|---|
-| `Navigator` | `core:navigation` | API dla feature'ów: `navigate`, `goBack`, `closeFlow`, `openLink`, `resumePendingLink`. |
+| `Navigator` | `core:navigation` | API dla feature'ów: `navigate`, `goBack`, `goBackWithResult`, `closeFlow`, `openLink`, `resumePendingLink`. |
 | `BackStackNavigator` | `core:navigation` | Jeden zapisywalny `NavBackStack`: push, pop (nigdy nie zdejmuje korzenia), `resetTo` zachowujący wspólny prefiks. |
 | `TabbedBackStack` | `core:navigation` | Stos per zakładka + indeks wybranej. `selectTab`, `navigate`, `goBack`, `resetTo`, `resetAll`. |
 | `NavigationState` | `core:navigation` | Zakładki + flow. Reguły z [rozdziału 5](#5-gdzie-ląduje-nowy-ekran). Czysty stan, bez UI. |
@@ -258,7 +259,7 @@ AppNavDisplay(
 Co `AppNavDisplay` robi pod spodem:
 
 1. **Dekoruje każdy stos osobno i cały czas** (`rememberDecoratedNavEntries` + `SaveableStateHolder` + `ViewModelStore` per stos). Ukryta zakładka nie traci stanu, a usunięty ze stosu wpis czyści swój ViewModel.
-2. **Nadaje wpisom `contentKey` z prefiksem stosu** (`tab0/…`, `tab1/…`, `flow/…`). Ten sam klucz na dwóch stosach to dwa różne wpisy dla Nav3 – bez współdzielonego stanu i bez konfliktów animacji.
+2. **Nadaje każdemu wpisowi własną tożsamość** (`contentKey` = stos + pozycja + klucz, np. `tab0/2/DetailsNavKey(itemId=7)`). Ten sam klucz na dwóch stosach albo dwa razy na jednym (Item 7 → 8 → 7) to osobne wpisy – z osobnym ViewModelem i zapisanym stanem. Szczegóły: [navigation-arguments.md, rozdział 5](navigation-arguments.md#5-tożsamość-wpisu--ten-sam-ekran-dwa-razy).
 3. **Pokazuje jeden `NavDisplay`** z listą `zakładka startowa + wybrana zakładka + flow`. Dzięki temu predictive back zawsze podgląda dokładnie to, co pokaże `goBack()`:
    - we flow → poprzedni ekran flow albo zakładkę pod nim,
    - na korzeniu innej zakładki → zakładkę startową,
