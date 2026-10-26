@@ -81,7 +81,7 @@ AppNavDisplay  (core:navigation, Compose)        ← rysuje stan przez Nav3 NavD
 
 | Klasa / plik | Moduł | Odpowiedzialność |
 |---|---|---|
-| `Navigator` | `core:navigation` | API dla feature'ów: `navigate`, `goBack`, `goBackWithResult`, `closeFlow`, `openLink`, `resumePendingLink`. |
+| `Navigator` | `core:navigation` | API dla feature'ów: `navigate`, `goBack`, `closeFlow`, `openLink`, `resumePendingLink`. |
 | `BackStackNavigator` | `core:navigation` | Jeden zapisywalny `NavBackStack`: push, pop (nigdy nie zdejmuje korzenia), `resetTo` zachowujący wspólny prefiks. |
 | `TabbedBackStack` | `core:navigation` | Stos per zakładka + indeks wybranej. `selectTab`, `navigate`, `goBack`, `resetTo`, `resetAll`. |
 | `NavigationState` | `core:navigation` | Zakładki + flow. Reguły z [rozdziału 5](#5-gdzie-ląduje-nowy-ekran). Czysty stan, bez UI. |

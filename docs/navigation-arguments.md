@@ -32,7 +32,7 @@ Model stanu (zakładki, flow, `AppNavDisplay`) opisuje [navigation.md](navigatio
 4. **ID są typowane** (`ItemId`, `OrderId`), więc nie da się podać ID zamówienia tam, gdzie oczekiwane jest ID produktu.
 5. **ViewModel dostaje klucz w konstruktorze** (Hilt assisted injection). Nie ma `SavedStateHandle["orderId"]`.
 6. **Każdy wpis na stosie ma własną tożsamość.** Ten sam ekran z tymi samymi argumentami dwa razy to dwa niezależne ekrany.
-7. **Wynik wraca typowanym kluczem** (`ResultKey<T>`) dokładnie do ekranu, który otworzył zwracający ekran. Stan, który ma przetrwać dłużej, trafia do repozytorium.
+7. **Wynik wraca przez `ResultEventBus` z Nav3**, z jawnym kluczem z `api` zwracającego ekranu. Stan, który ma przetrwać dłużej, trafia do repozytorium.
 
 ---
 
@@ -52,7 +52,7 @@ Kto z czego korzysta:
 
 ```
 orders:impl   ──navigate(DetailsNavKey(itemId))──▶  details:api   (klucz)
-profile:impl  ──navigate(ItemPickerNavKey(...))──▶  details:api   (klucz + ResultKey)
+profile:impl  ──navigate(ItemPickerNavKey(...))──▶  details:api   (klucz + ItemPickerResult.KEY)
 details:impl  ── entry<DetailsNavKey> { ... }       (ekran, ViewModel – nikt spoza go nie zna)
 ```
 
@@ -88,7 +88,7 @@ value class OrderId(val value: Long) {
 }
 ```
 
-- **Używane wszędzie, gdzie ID przekracza granicę modułu**: w kluczach, repozytoriach (`observeOrder(id: OrderId)`), wynikach (`ResultKey<ItemId>`) i trasach linków (`OrderDetailsNavKey(OrderId(it))`).
+- **Używane wszędzie, gdzie ID przekracza granicę modułu**: w kluczach, repozytoriach (`observeOrder(id: OrderId)`), wynikach (`ResultEffect<ItemId>`) i trasach linków (`OrderDetailsNavKey(OrderId(it))`).
 - `value class` nie alokuje obiektu w czasie działania i serializuje się jako sama wartość.
 - Moduł `api` feature'a udostępnia `core:model` (`api(projects.core.model)`), bo ID są częścią jego kontraktu.
 
@@ -178,11 +178,13 @@ Feature'y nie muszą nic z tym robić. Nie trzeba też blokować duplikatów ani
 
 ## 6. Wyniki – „wybierz i oddaj”
 
+Wyniki idą przez **wbudowany w Nav3 1.2 `ResultEventBus`** (`androidx.navigation3.runtime.result`). Nie ma własnego mechanizmu: `AppNavDisplay` tylko udostępnia jedną szynę dla całej aplikacji.
+
 ### 6.1 Kiedy wynik, a kiedy repozytorium
 
 | Sytuacja | Mechanizm |
 |---|---|
-| Wybór, o którym decyduje ekran wywołujący (picker: produkt, adres, data, filtr) | **wynik** (`ResultKey`) |
+| Wybór, o którym decyduje ekran wywołujący (picker: produkt, adres, data, filtr) | **wynik** (`ResultEventBus`) |
 | Zmiana, która ma przetrwać i być widoczna wszędzie (edycja profilu, ocena zamówienia, zapis adresu) | **repozytorium**: ekran zapisuje, inne obserwują; żadnego wyniku |
 | Logowanie, które ma odblokować przerwany link | `resumePendingLink()` (patrz [deeplinks.md](deeplinks.md)) |
 
@@ -193,15 +195,21 @@ Feature'y nie muszą nic z tym robić. Nie trzeba też blokować duplikatów ani
 @Serializable
 data class ItemPickerNavKey(val selected: ItemId? = null) : NavKey
 
-data object ItemPickerResult : ResultKey<ItemId>("details.itemPicker")
+object ItemPickerResult {
+    const val KEY: String = "dev.cyrzan.skeleton.feature.details.itemPicker"
+}
 ```
 
 ```kotlin
-// details:impl – picker oddaje wybór
+// details:impl – picker wysyła wybór i wraca
 entry<ItemPickerNavKey> { key ->
+    val resultBus = LocalResultEventBus.current
     ItemPickerRoute(
         selected = key.selected,
-        onPick = { itemId -> navigator.goBackWithResult(ItemPickerResult, itemId) },
+        onPick = { itemId ->
+            resultBus.sendResult(ItemPickerResult.KEY, itemId)
+            navigator.goBack()
+        },
         onBackClick = { navigator.goBack() },   // anulowanie = brak wyniku
     )
 }
@@ -215,8 +223,7 @@ entry<ProfileNavKey> {
 
 @Composable
 internal fun ProfileRoute(..., viewModel: ProfileViewModel = hiltViewModel()) {
-    // Delivered when the picker opened from THIS screen goes back with a choice.
-    ResultEffect(ItemPickerResult, viewModel::onFavouritePicked)
+    ResultEffect<ItemId>(ItemPickerResult.KEY) { itemId -> viewModel.onFavouritePicked(itemId) }
     ...
 }
 
@@ -226,31 +233,33 @@ fun onFavouritePicked(itemId: ItemId) {
 }
 ```
 
-### 6.3 Jak to działa
+**Jawny klucz zamiast domyślnego.** `ResultEffect<ItemId>()` bez klucza używa nazwy typu, więc każdy ekran zwracający `ItemId` wpadałby do tego samego kanału. Klucz należy do kontraktu zwracającego ekranu i leży w jego `api`, obok klucza nawigacji.
+
+### 6.3 Jak to działa i czego się spodziewać
 
 ```
-Profile (tab2/0) ──navigate──▶ ItemPicker (tab2/1)
-                                   │ goBackWithResult(ItemPickerResult, ItemId("5"))
-                                   ▼
-NavigationState: pop → nowy wierzch = tab2/0 → NavResultStore[tab2/0, "details.itemPicker"] = 5
-                                   ▼
-ResultEffect w Profile (tab2/0): widzi wynik dla SIEBIE → take() → onFavouritePicked(5)
+Profile ──navigate──▶ ItemPicker
+                         │ sendResult("…itemPicker", ItemId("5")); goBack()
+                         ▼
+ResultEventBus: kanał "…itemPicker" (buforowany) ── ItemId("5")
+                         ▼
+Profile znów w kompozycji → ResultEffect zbiera z kanału → onFavouritePicked(5)
 ```
 
-- **Adresowanie po tożsamości wpisu** (rozdział 5). Wynik trafia do ekranu, który jest na wierzchu po powrocie. Ten sam ekran w innym miejscu stosu ani na innej zakładce go nie dostanie.
-- **Dostarczenie jednorazowe**: `take()` usuwa wynik. Rotacja nie wywoła go drugi raz.
-- **Wyniki do zdjętych wpisów są usuwane** przy kolejnym `goBackWithResult`. Przy wylogowaniu (`resetAll`) usuwane są wszystkie.
-- **Rotacja.** Magazyn wyników jest trzymany w `ViewModel` aktywności, więc nic nie ginie, nawet jeśli rotacja wypadnie między powrotem a odebraniem.
-- **Śmierć procesu.** Wyniki nie są zapisywane, bo dostarczenie trwa jedną klatkę. Odbiorca (ViewModel) zapisuje wynik u siebie, np. w `SavedStateHandle`. Gdy proces zginie, kiedy picker jest otwarty, oba ekrany odtworzą się ze stosu, a wynik zostanie dostarczony normalnie po wyborze.
+- **Kanał per klucz, nie per ekran.** Wynik dostaje **ten, kto akurat zbiera** dany klucz, i tylko raz. W praktyce to ekran, który otworzył picker, bo tylko on ma `ResultEffect` na ten klucz i to on jest pod pickerem.
+- **Buforowanie.** Jeśli nikt akurat nie zbiera, wynik czeka w kanale i trafi do **następnego** ekranu, który zacznie zbierać ten klucz. Dlatego `ResultEffect` stawiaj tylko w ekranie, który otwiera picker, a klucz ma być unikalny dla kontraktu. W razie potrzeby `resultBus.removeResult(KEY)` czyści kanał.
+- **Rotacja.** Szyna jest trzymana w `ViewModel` aktywności (`ResultEventBusHolder`), więc wynik wysłany tuż przed rotacją nie ginie. Domyślne `rememberResultEventBus()` by go zgubiło.
+- **Śmierć procesu.** Szyna nie jest zapisywana. Wynik żyje ułamek sekundy, a odbiorca (ViewModel) zapisuje go u siebie, np. w `SavedStateHandle`. Gdy proces zginie, kiedy picker jest otwarty, oba ekrany odtworzą się ze stosu, a wybór zadziała normalnie.
 
 ### 6.4 Czego nie robić
 
 | Antywzorzec | Problem |
 |---|---|
 | Callback w kluczu (`ItemPickerNavKey(onPick = ...)`) | nie da się go zapisać; po śmierci procesu znika |
-| Wspólny ViewModel „wyników” wstrzykiwany do obu ekranów | ukryte powiązanie; nie wiadomo, kto i kiedy czyta; wynik może trafić do niewłaściwego ekranu |
-| Globalny event bus | brak adresata, wynik ginie, gdy nikt akurat nie nasłuchuje |
-| `ResultKey` w module odbiorcy | to zwracający ekran definiuje, co zwraca. Klucz wyniku leży obok jego klucza nawigacji |
+| `ResultEffect<ItemId>()` bez klucza | wszystkie wyniki typu `ItemId` w jednym kanale; wynik jednego pickera może trafić do ekranu, który czeka na inny |
+| `ResultEffect` na ekranie, który nie otwiera pickera | ten ekran może „przechwycić” wynik przeznaczony dla innego |
+| Wspólny ViewModel „wyników” wstrzykiwany do obu ekranów | ukryte powiązanie; nie wiadomo, kto i kiedy czyta |
+| Klucz wyniku w module odbiorcy | to zwracający ekran definiuje, co zwraca. Klucz leży obok jego klucza nawigacji |
 
 ---
 
@@ -409,7 +418,7 @@ Stan (a nie jednorazowe „zdarzenie” w `Channel`) sprawia, że nic nie ginie 
 | Ten sam ekran z tymi samymi argumentami na dwóch zakładkach | dwa niezależne ekrany (różny stos w tożsamości) |
 | Korzenie zakładek (`HomeNavKey`, `OrdersNavKey`...) | **bez argumentów** (`data object`). Zakładka ma jeden korzeń, a jej stan i filtry trzyma jej ViewModel |
 | Ekran z argumentem, który ma się otworzyć na konkretnej zakładce (np. z linku) | `parentOf` w `DeepLinkConfig.kt`, patrz [navigation.md, rozdział 5](navigation.md#5-gdzie-ląduje-nowy-ekran) |
-| Wynik z pickera na zakładce Profile | wraca do ekranu na zakładce Profile; inne zakładki są nietknięte |
+| Wynik z pickera na zakładce Profile | odbiera go Profil (jedyny ekran z `ResultEffect` na ten klucz); ekrany na ukrytych zakładkach nie są w kompozycji, więc nie zbierają |
 
 ---
 
@@ -421,7 +430,7 @@ Stan (a nie jednorazowe „zdarzenie” w `Channel`) sprawia, że nic nie ginie 
 4. **ViewModel z `@AssistedInject` i `@Assisted navKey: XNavKey`**, a w Route `hiltViewModel<VM, Factory> { it.create(navKey) }`.
 5. **Entry provider**: `entry<XNavKey> { key -> XRoute(navKey = key, ...) }`.
 6. **Klucze list w UI**: `key = { it.id.value }`, nigdy sam `value class`.
-7. **Jeśli ekran zwraca wynik**: `data object XResult : ResultKey<T>("x.name")` obok klucza i `navigator.goBackWithResult(XResult, value)`. Odbiorca woła `ResultEffect(XResult) { vm.onX(it) }` i zapisuje wynik u siebie.
+7. **Jeśli ekran zwraca wynik**: `object XResult { const val KEY = "…" }` obok klucza, a w ekranie `LocalResultEventBus.current.sendResult(XResult.KEY, value)` i `navigator.goBack()`. Odbiorca woła `ResultEffect<T>(XResult.KEY) { vm.onX(it) }` i zapisuje wynik u siebie.
 8. **Inny feature, który chce otworzyć ekran**: dodaje `implementation(projects.feature.x.api)`. Nigdy `impl`.
 
 ---
@@ -431,7 +440,7 @@ Stan (a nie jednorazowe „zdarzenie” w `Channel`) sprawia, że nic nie ginie 
 | Test | Co sprawdza |
 |---|---|
 | `EntryIdTest` | równe klucze na jednym stosie to różne wpisy; tożsamość stabilna przy zmianach nad wpisem; inny ekran na tej samej pozycji to nowy wpis |
-| `NavigationStateTest` | wynik trafia do ekranu, który otworzył zwracający; ten sam ekran niżej na stosie go nie dostaje; wyniki do zdjętych wpisów są usuwane; `resetAll` czyści wszystko |
+| `NavigationStateTest` | flow nad zakładkami, podział syntetycznego stosu, `resetAll` |
 | `DeepLinkContractTest` | trasy linków budują klucze z typowanymi ID (`OrderDetailsNavKey(OrderId(1001))`) |
 | `SearchMatchingTest` | filtrowanie i sortowanie wyników dla `SearchCriteria` |
 | `SharedViewModelScopeTest` | kroki należą do zakresu najbliższego kroku 1 pod nimi; drugi formularz ma własny zakres; krok bez kroku 1 to błąd |
@@ -450,8 +459,7 @@ Na urządzeniu:
 ## 13. Ograniczenia i TODO
 
 - **Brak automatycznej kontroli kluczy.** Nic nie sprawdza w buildzie, że każdy `NavKey` jest `@Serializable` i nie zawiera „ciężkich” pól. Dobry kandydat na regułę lint/detekt albo test, który serializuje każdy zarejestrowany klucz.
-- **Wynik do ekranu pod flow.** Jeśli flow ma jeden ekran, a ten zwraca wynik, wynik trafia do ekranu zakładki pod flow, bo to on jest na wierzchu po powrocie. To zamierzone, ale warto o tym pamiętać.
-- **Wyniki nie przeżywają śmierci procesu** w ułamku sekundy między powrotem a odebraniem (patrz 6.3).
-- **Nav3 1.2 ma własny `ResultEventBus`** (`androidx.navigation3.runtime.result`). Jest kluczowany typem lub stringiem i dostarcza wynik każdemu, kto akurat nasłuchuje. Nasz `ResultKey` adresuje wynik do konkretnego wpisu (rozdział 6), co ma znaczenie przy tym samym ekranie kilka razy na stosach. Jeśli to nie jest potrzebne, wbudowany mechanizm wystarczy.
+- **Wyniki nie są adresowane do konkretnego ekranu**, tylko do klucza (patrz 6.3). Wystarcza, dopóki `ResultEffect` stoi tylko w ekranie, który otwiera picker.
+- **Wyniki nie przeżywają śmierci procesu** w ułamku sekundy między wysłaniem a odebraniem (patrz 6.3).
 - **Ponowna wysyłka formularza po przerwaniu** (śmierć procesu w trakcie żądania) wymaga klucza idempotentności w API.
 - **Etykieta „ViewModel #N” w szczegółach** to element demonstracyjny. W prawdziwym ekranie należy ją usunąć.
