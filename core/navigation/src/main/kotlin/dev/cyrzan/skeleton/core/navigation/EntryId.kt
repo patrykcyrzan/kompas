@@ -13,3 +13,7 @@ import androidx.navigation3.runtime.NavKey
  * keeps the common prefix – and the key makes a new screen at a reused position a new entry.
  */
 internal fun entryId(scope: String, index: Int, key: NavKey): String = "$scope/$index/$key"
+
+internal fun tabScope(tabIndex: Int): String = "tab$tabIndex"
+
+internal const val FLOW_SCOPE = "flow"

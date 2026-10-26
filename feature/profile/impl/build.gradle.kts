@@ -7,6 +7,7 @@ dependencies {
     implementation(projects.feature.orders.api)
     implementation(projects.feature.settings.api)
     implementation(projects.feature.auth.api)
+    implementation(projects.feature.details.api)
 
     implementation(projects.core.data)
 }

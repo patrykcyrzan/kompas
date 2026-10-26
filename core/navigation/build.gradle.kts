@@ -11,6 +11,7 @@ dependencies {
     // AppNavDisplay: the Nav3 UI wiring (decorators, NavDisplay) lives here so `:app` only describes its tabs.
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.compose.foundation)
 
     testImplementation(libs.junit)

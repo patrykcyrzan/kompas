@@ -21,18 +21,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.cyrzan.skeleton.core.model.ItemId
+import dev.cyrzan.skeleton.core.navigation.ResultEffect
+import dev.cyrzan.skeleton.feature.details.api.ItemPickerResult
 
 @Composable
 internal fun ProfileRoute(
     onSignInClick: () -> Unit,
+    onFavouriteClick: (current: ItemId?) -> Unit,
     onOrdersClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val isSignedIn by viewModel.isSignedIn.collectAsStateWithLifecycle()
+    val favourite by viewModel.favourite.collectAsStateWithLifecycle()
+    // Delivered when the picker opened from THIS screen goes back with a choice.
+    ResultEffect(ItemPickerResult, viewModel::onFavouritePicked)
     ProfileScreen(
         isSignedIn = isSignedIn,
+        favourite = favourite,
+        onFavouriteClick = { onFavouriteClick(favourite) },
         onSignInClick = onSignInClick,
         onSignOutClick = viewModel::signOut,
         onOrdersClick = onOrdersClick,
@@ -45,6 +54,8 @@ internal fun ProfileRoute(
 @Composable
 internal fun ProfileScreen(
     isSignedIn: Boolean,
+    favourite: ItemId?,
+    onFavouriteClick: () -> Unit,
     onSignInClick: () -> Unit,
     onSignOutClick: () -> Unit,
     onOrdersClick: () -> Unit,
@@ -59,6 +70,7 @@ internal fun ProfileScreen(
             } else {
                 ProfileRow("Sign in", "Full screen, above the tabs", onSignInClick)
             }
+            ProfileRow("Favourite item", favourite?.let { "Item #$it" } ?: "None – pick one (returns a result)", onFavouriteClick)
             ProfileRow("My orders", "Switches to the Orders tab", onOrdersClick)
             ProfileRow("Settings", "Pushed on the Profile tab", onSettingsClick)
             ProfileRow("About", "Pushed on the Profile tab", onAboutClick)

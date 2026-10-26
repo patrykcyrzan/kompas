@@ -10,6 +10,7 @@ import dev.cyrzan.skeleton.core.deeplink.Destination
 import dev.cyrzan.skeleton.core.navigation.NavigationState
 import dev.cyrzan.skeleton.core.navigation.Navigator
 import dev.cyrzan.skeleton.core.navigation.OpenLinkResult
+import dev.cyrzan.skeleton.core.navigation.ResultKey
 
 /** The [Navigator] features get: [NavigationState] operations + links, all going through the deep link pipeline. */
 @Stable
@@ -21,6 +22,8 @@ internal class AppNavigator(
     override fun navigate(key: NavKey) = state.navigate(key)
 
     override fun goBack(): Boolean = state.goBack()
+
+    override fun <T : Any> goBackWithResult(key: ResultKey<T>, value: T): Boolean = state.goBackWithResult(key, value)
 
     override fun closeFlow() = state.closeFlow()
 

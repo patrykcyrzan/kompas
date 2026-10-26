@@ -10,6 +10,7 @@ import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
 import dev.cyrzan.skeleton.feature.auth.api.LoginNavKey
+import dev.cyrzan.skeleton.feature.details.api.ItemPickerNavKey
 import dev.cyrzan.skeleton.feature.orders.api.OrdersNavKey
 import dev.cyrzan.skeleton.feature.profile.api.AboutNavKey
 import dev.cyrzan.skeleton.feature.profile.api.ProfileNavKey
@@ -25,6 +26,8 @@ internal class ProfileEntryProvider @Inject constructor() : EntryProviderInstall
             ProfileRoute(
                 // A full-screen key: opens above the tabs (decided by the app).
                 onSignInClick = { navigator.navigate(LoginNavKey) },
+                // Another feature's screen with an (optional) argument; its result comes back via ResultEffect.
+                onFavouriteClick = { current -> navigator.navigate(ItemPickerNavKey(selected = current)) },
                 // OrdersNavKey is a tab root: navigate() switches tabs instead of pushing it here.
                 onOrdersClick = { navigator.navigate(OrdersNavKey) },
                 onSettingsClick = { navigator.navigate(SettingsNavKey) },

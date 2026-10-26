@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -41,9 +42,9 @@ fun AppNavDisplay(
 ) {
     val tabs = state.tabs
     val entriesByTab = tabs.tabs.mapIndexed { index, tab ->
-        key(tab) { rememberStackEntries("tab$index", tabs.stackOf(tab).backStack, entryProvider) }
+        key(tab) { rememberStackEntries(tabScope(index), tabs.stackOf(tab).backStack, entryProvider) }
     }.let { tabs.tabs.zip(it).toMap() }
-    val flowEntries = rememberStackEntries("flow", state.flowBackStack, entryProvider)
+    val flowEntries = rememberStackEntries(FLOW_SCOPE, state.flowBackStack, entryProvider)
 
     val entries = buildList {
         addAll(entriesByTab.getValue(tabs.startTab))
@@ -52,17 +53,19 @@ fun AppNavDisplay(
     }
     val showBottomBar = !state.isFlowOpen
 
-    Column(modifier) {
-        NavDisplay(
-            entries = entries,
-            // The bottom bar draws behind the system navigation bar – screens above it must not pad for it again.
-            modifier = Modifier
-                .weight(1f)
-                .then(if (showBottomBar) Modifier.consumeWindowInsets(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)) else Modifier),
-            onBack = onBack,
-        )
-        AnimatedVisibility(visible = showBottomBar, enter = expandVertically(), exit = shrinkVertically()) {
-            bottomBar()
+    CompositionLocalProvider(LocalNavResultStore provides state.results) {
+        Column(modifier) {
+            NavDisplay(
+                entries = entries,
+                // The bottom bar draws behind the system navigation bar – screens above it must not pad for it again.
+                modifier = Modifier
+                    .weight(1f)
+                    .then(if (showBottomBar) Modifier.consumeWindowInsets(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)) else Modifier),
+                onBack = onBack,
+            )
+            AnimatedVisibility(visible = showBottomBar, enter = expandVertically(), exit = shrinkVertically()) {
+                bottomBar()
+            }
         }
     }
 }
@@ -81,7 +84,10 @@ private fun rememberStackEntries(
     val entries = remember(backStack.toList()) {
         backStack.mapIndexed { index, key ->
             val entry = entryProvider(key)
-            NavEntry(key, contentKey = entryId(scope, index, key), metadata = entry.metadata) { entry.Content() }
+            val id = entryId(scope, index, key)
+            NavEntry(key, contentKey = id, metadata = entry.metadata) {
+                CompositionLocalProvider(LocalNavEntryId provides id) { entry.Content() }
+            }
         }
     }
     return rememberDecoratedNavEntries(entries, decorators)

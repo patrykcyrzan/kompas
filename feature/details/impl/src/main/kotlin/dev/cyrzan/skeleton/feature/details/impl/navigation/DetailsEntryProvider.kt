@@ -10,7 +10,10 @@ import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
 import dev.cyrzan.skeleton.feature.details.api.DetailsNavKey
+import dev.cyrzan.skeleton.feature.details.api.ItemPickerNavKey
+import dev.cyrzan.skeleton.feature.details.api.ItemPickerResult
 import dev.cyrzan.skeleton.feature.details.impl.DetailsRoute
+import dev.cyrzan.skeleton.feature.details.impl.ItemPickerRoute
 import javax.inject.Inject
 
 internal class DetailsEntryProvider @Inject constructor() : EntryProviderInstaller {
@@ -21,6 +24,14 @@ internal class DetailsEntryProvider @Inject constructor() : EntryProviderInstall
                 navKey = key,
                 // The same screen again, with other arguments – pushed on the current stack.
                 onRelatedClick = { itemId -> navigator.navigate(DetailsNavKey(itemId)) },
+                onBackClick = { navigator.goBack() },
+            )
+        }
+        entry<ItemPickerNavKey> { key ->
+            ItemPickerRoute(
+                selected = key.selected,
+                // Back to the screen that opened the picker, with the choice.
+                onPick = { itemId -> navigator.goBackWithResult(ItemPickerResult, itemId) },
                 onBackClick = { navigator.goBack() },
             )
         }
