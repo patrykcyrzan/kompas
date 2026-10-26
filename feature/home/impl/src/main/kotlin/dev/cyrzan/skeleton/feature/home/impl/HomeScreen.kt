@@ -28,6 +28,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.cyrzan.skeleton.core.designsystem.theme.SkeletonTheme
 import dev.cyrzan.skeleton.core.model.Item
+import dev.cyrzan.skeleton.core.model.ItemId
 import dev.cyrzan.skeleton.core.model.Promo
 
 @Composable
@@ -89,7 +90,7 @@ internal fun HomeScreen(
                         )
                     }
                 }
-                items(uiState.items, key = Item::id) { item ->
+                items(uiState.items, key = { it.id.value }) { item ->
                     ListItem(
                         headlineContent = { Text(item.title) },
                         supportingContent = { Text(item.description) },
@@ -108,7 +109,7 @@ private fun HomeScreenPreview() {
     SkeletonTheme {
         HomeScreen(
             uiState = HomeUiState.Success(
-                listOf(Item("1", "Item #1", "Description"), Item("2", "Item #2", "Description")),
+                listOf(Item(ItemId("1"), "Item #1", "Description"), Item(ItemId("2"), "Item #2", "Description")),
                 Promo("Featured: Item #7", "https://app.example.com/items/7"),
             ),
             onItemClick = {},

@@ -1,6 +1,7 @@
 package dev.cyrzan.skeleton.core.data.repository
 
 import dev.cyrzan.skeleton.core.model.Item
+import dev.cyrzan.skeleton.core.model.ItemId
 import dev.cyrzan.skeleton.core.model.Promo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,18 +15,18 @@ internal class FakeItemsRepository @Inject constructor() : ItemsRepository {
     private val items = MutableStateFlow(
         (1..ITEM_COUNT).map { number ->
             Item(
-                id = "$number",
+                id = ItemId("$number"),
                 title = "Item #$number",
                 description = "Description of item #$number.",
                 // Neighbours: lets the same details screen be opened again with other (or the same) arguments.
-                relatedIds = listOf(number - 1, number + 1).filter { it in 1..ITEM_COUNT }.map(Int::toString),
+                relatedIds = listOf(number - 1, number + 1).filter { it in 1..ITEM_COUNT }.map { ItemId("$it") },
             )
         },
     )
 
     override fun observeItems(): Flow<List<Item>> = items
 
-    override fun observeItem(id: String): Flow<Item?> =
+    override fun observeItem(id: ItemId): Flow<Item?> =
         items.map { list -> list.firstOrNull { it.id == id } }
 
     override fun observePromo(): Flow<Promo?> = flowOf(

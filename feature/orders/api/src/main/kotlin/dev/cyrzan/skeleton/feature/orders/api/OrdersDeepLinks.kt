@@ -2,6 +2,7 @@ package dev.cyrzan.skeleton.feature.orders.api
 
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkRoute
 import dev.cyrzan.skeleton.core.deeplink.deepLinkRoute
+import dev.cyrzan.skeleton.core.model.OrderId
 
 object OrdersDeepLinks {
     /** `kompas://orders`, `https://<host>/orders` */
@@ -9,6 +10,6 @@ object OrdersDeepLinks {
 
     /** `kompas://orders/1001`, `https://<host>/orders/1001` */
     val orderDetails: DeepLinkRoute = deepLinkRoute("orders/{orderId}") { params ->
-        params.pathLong("orderId")?.let(::OrderDetailsNavKey)
+        params.pathLong("orderId")?.let { OrderDetailsNavKey(OrderId(it)) }
     }
 }

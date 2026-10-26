@@ -6,6 +6,8 @@ import dev.cyrzan.skeleton.core.deeplink.AuthenticationGuard
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkResult
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkSource
 import dev.cyrzan.skeleton.core.deeplink.Destination
+import dev.cyrzan.skeleton.core.model.ItemId
+import dev.cyrzan.skeleton.core.model.OrderId
 import dev.cyrzan.skeleton.feature.details.api.DetailsDeepLinks
 import dev.cyrzan.skeleton.feature.auth.api.LoginNavKey
 import dev.cyrzan.skeleton.feature.details.api.DetailsNavKey
@@ -41,10 +43,10 @@ class DeepLinkContractTest {
     /** The first element is the tab the link opens on. */
     private val contract = mapOf<String, List<Destination>>(
         "https://kompas.example.com/home" to listOf(HomeNavKey),
-        "https://kompas.example.com/items/42" to listOf(HomeNavKey, DetailsNavKey("42")),
-        "kompas://items/42?utm_source=mail" to listOf(HomeNavKey, DetailsNavKey("42")),
+        "https://kompas.example.com/items/42" to listOf(HomeNavKey, DetailsNavKey(ItemId("42"))),
+        "kompas://items/42?utm_source=mail" to listOf(HomeNavKey, DetailsNavKey(ItemId("42"))),
         "kompas://orders" to listOf(OrdersNavKey),
-        "kompas://orders/1001" to listOf(OrdersNavKey, OrderDetailsNavKey(1001)),
+        "kompas://orders/1001" to listOf(OrdersNavKey, OrderDetailsNavKey(OrderId(1001))),
         "kompas://profile" to listOf(ProfileNavKey),
         "kompas://settings" to listOf(ProfileNavKey, SettingsNavKey),
         "kompas://about" to listOf(ProfileNavKey, AboutNavKey),

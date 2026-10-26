@@ -1,8 +1,8 @@
 package dev.cyrzan.skeleton.core.model
 
 data class Item(
-    val id: String,
+    val id: ItemId,
     val title: String,
     val description: String,
-    val relatedIds: List<String> = emptyList(),
+    val relatedIds: List<ItemId> = emptyList(),
 )

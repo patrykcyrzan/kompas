@@ -23,12 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.cyrzan.skeleton.core.model.ItemId
 import dev.cyrzan.skeleton.feature.details.api.DetailsNavKey
 
 @Composable
 internal fun DetailsRoute(
     navKey: DetailsNavKey,
-    onRelatedClick: (itemId: String) -> Unit,
+    onRelatedClick: (itemId: ItemId) -> Unit,
     onBackClick: () -> Unit,
     viewModel: DetailsViewModel = hiltViewModel<DetailsViewModel, DetailsViewModel.Factory>(
         creationCallback = { factory -> factory.create(navKey) },
@@ -43,7 +44,7 @@ internal fun DetailsRoute(
 internal fun DetailsScreen(
     uiState: DetailsUiState,
     instance: Int,
-    onRelatedClick: (itemId: String) -> Unit,
+    onRelatedClick: (itemId: ItemId) -> Unit,
     onBackClick: () -> Unit,
 ) {
     Scaffold(
