@@ -28,6 +28,7 @@ include(":app")
 
 include(":core:model")
 include(":core:data")
+include(":core:network")
 include(":core:deeplink")
 include(":core:designsystem")
 include(":core:navigation")

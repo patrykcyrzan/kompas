@@ -30,6 +30,7 @@ dependencies {
     implementation(projects.core.navigation)
     implementation(projects.core.deeplink)
     implementation(projects.core.data)
+    implementation(projects.core.network)
 
     // Tab roots and the deep link hierarchy (which tab a screen belongs to) are app-level decisions.
     implementation(projects.feature.home.api)
@@ -50,6 +51,9 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.process)
+
+    // Only src/debug references Chucker, so release needs no library-no-op.
+    debugImplementation(libs.chucker)
 
     testImplementation(libs.junit)
 }
