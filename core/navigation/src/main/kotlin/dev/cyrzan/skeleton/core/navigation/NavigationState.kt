@@ -5,8 +5,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 
@@ -32,7 +30,6 @@ class NavigationState(
     val tabs: TabbedBackStack,
     private val flow: MutableList<NavKey>,
     private val isFullScreen: (NavKey) -> Boolean,
-    val results: NavResultStore = NavResultStore(),
 ) {
     /** Full-screen stack above the tabs; empty when no flow is open. */
     val flowBackStack: List<NavKey> get() = flow
@@ -68,31 +65,6 @@ class NavigationState(
         return true
     }
 
-    /** [goBack] and hand [value] to the screen that is on top afterwards (see [ResultEffect]). */
-    fun <T : Any> goBackWithResult(key: ResultKey<T>, value: T): Boolean {
-        if (!goBack()) return false
-        results.retainOnly(entryIds())
-        results.put(currentEntryId, key, value)
-        return true
-    }
-
-    /** Identity of the screen the user sees – the same one [AppNavDisplay] gives its entry. */
-    internal val currentEntryId: String
-        get() = if (isFlowOpen) {
-            entryId(FLOW_SCOPE, flow.lastIndex, flow.last())
-        } else {
-            val tabIndex = tabs.tabs.indexOf(tabs.currentTab)
-            tabs.stackOf(tabs.currentTab).backStack.let { stack -> entryId(tabScope(tabIndex), stack.lastIndex, stack.last()) }
-        }
-
-    /** Every entry on every stack. */
-    internal fun entryIds(): Set<String> = buildSet {
-        tabs.tabs.forEachIndexed { tabIndex, tab ->
-            tabs.stackOf(tab).backStack.forEachIndexed { index, key -> add(entryId(tabScope(tabIndex), index, key)) }
-        }
-        flow.forEachIndexed { index, key -> add(entryId(FLOW_SCOPE, index, key)) }
-    }
-
     /** Leaves the whole flow at once (e.g. a multi-step sign-in that finished). */
     fun closeFlow() = flow.clear()
 
@@ -113,7 +85,6 @@ class NavigationState(
     fun resetAll() {
         flow.clear()
         tabs.resetAll()
-        results.clear()
     }
 }
 
@@ -137,11 +108,5 @@ fun rememberNavigationState(
     val tabbed = rememberTabbedBackStack(tabs, inTabs.ifEmpty { listOf(tabs.first()) })
     val flow = rememberNavBackStack(*inFlow.toTypedArray())
     val currentIsFullScreen by rememberUpdatedState(isFullScreen)
-    // Retained across configuration changes, like the screens' ViewModels.
-    val results = viewModel<NavResultStoreHolder>().store
-    return remember(tabbed, flow, results) { NavigationState(tabbed, flow, { currentIsFullScreen(it) }, results) }
-}
-
-internal class NavResultStoreHolder : ViewModel() {
-    val store = NavResultStore()
+    return remember(tabbed, flow) { NavigationState(tabbed, flow) { currentIsFullScreen(it) } }
 }

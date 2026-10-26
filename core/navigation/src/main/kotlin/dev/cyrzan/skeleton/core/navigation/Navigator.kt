@@ -22,12 +22,6 @@ interface Navigator {
     /** Pops the top entry. Returns `false` when there is nothing to go back to. */
     fun goBack(): Boolean
 
-    /**
-     * Goes back and hands [value] to the screen that is on top afterwards – the one that opened this
-     * screen. It receives it with [ResultEffect]. [key] is declared next to this screen's key.
-     */
-    fun <T : Any> goBackWithResult(key: ResultKey<T>, value: T): Boolean
-
     /** Closes the whole full-screen flow (e.g. a finished sign-in) and returns to the tabs. */
     fun closeFlow()
 

@@ -21,8 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.result.ResultEffect
 import dev.cyrzan.skeleton.core.model.ItemId
-import dev.cyrzan.skeleton.core.navigation.ResultEffect
 import dev.cyrzan.skeleton.feature.details.api.ItemPickerResult
 
 @Composable
@@ -37,8 +37,8 @@ internal fun ProfileRoute(
 ) {
     val isSignedIn by viewModel.isSignedIn.collectAsStateWithLifecycle()
     val favourite by viewModel.favourite.collectAsStateWithLifecycle()
-    // Delivered when the picker opened from THIS screen goes back with a choice.
-    ResultEffect(ItemPickerResult, viewModel::onFavouritePicked)
+    // The picker sends its choice through the ResultEventBus; collected while this screen is composed.
+    ResultEffect<ItemId>(ItemPickerResult.KEY) { itemId -> viewModel.onFavouritePicked(itemId) }
     ProfileScreen(
         isSignedIn = isSignedIn,
         favourite = favourite,

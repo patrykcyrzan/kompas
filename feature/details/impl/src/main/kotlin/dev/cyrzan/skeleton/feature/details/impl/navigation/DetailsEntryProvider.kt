@@ -2,6 +2,7 @@ package dev.cyrzan.skeleton.feature.details.impl.navigation
 
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.result.LocalResultEventBus
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -32,10 +33,14 @@ internal class DetailsEntryProvider @Inject constructor() : EntryProviderInstall
             )
         }
         entry<ItemPickerNavKey> { key ->
+            val resultBus = LocalResultEventBus.current
             ItemPickerRoute(
                 selected = key.selected,
-                // Back to the screen that opened the picker, with the choice.
-                onPick = { itemId -> navigator.goBackWithResult(ItemPickerResult, itemId) },
+                // Hand the choice to whoever waits for it, then back to the screen that opened the picker.
+                onPick = { itemId ->
+                    resultBus.sendResult(ItemPickerResult.KEY, itemId)
+                    navigator.goBack()
+                },
                 onBackClick = { navigator.goBack() },
             )
         }
