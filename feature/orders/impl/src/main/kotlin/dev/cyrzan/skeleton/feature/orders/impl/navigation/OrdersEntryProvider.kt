@@ -14,6 +14,7 @@ import dev.cyrzan.skeleton.feature.orders.api.OrderDetailsNavKey
 import dev.cyrzan.skeleton.feature.orders.api.OrdersNavKey
 import dev.cyrzan.skeleton.feature.orders.impl.OrderDetailsRoute
 import dev.cyrzan.skeleton.feature.orders.impl.OrdersRoute
+import dev.cyrzan.skeleton.feature.support.api.SupportRequestNavKey
 import javax.inject.Inject
 
 internal class OrdersEntryProvider @Inject constructor() : EntryProviderInstaller {
@@ -27,6 +28,8 @@ internal class OrdersEntryProvider @Inject constructor() : EntryProviderInstalle
                 navKey = key,
                 // Another feature's screen, pushed on the *current* tab.
                 onItemClick = { itemId -> navigator.navigate(DetailsNavKey(itemId)) },
+                // The form's only argument; the app opens it full screen.
+                onReportProblemClick = { navigator.navigate(SupportRequestNavKey(orderId = key.orderId)) },
                 onBackClick = { navigator.goBack() },
             )
         }

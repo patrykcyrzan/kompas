@@ -31,6 +31,7 @@ internal fun ProfileRoute(
     onFavouriteClick: (current: ItemId?) -> Unit,
     onOrdersClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    onSupportClick: () -> Unit,
     onAboutClick: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
@@ -46,6 +47,7 @@ internal fun ProfileRoute(
         onSignOutClick = viewModel::signOut,
         onOrdersClick = onOrdersClick,
         onSettingsClick = onSettingsClick,
+        onSupportClick = onSupportClick,
         onAboutClick = onAboutClick,
     )
 }
@@ -60,6 +62,7 @@ internal fun ProfileScreen(
     onSignOutClick: () -> Unit,
     onOrdersClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    onSupportClick: () -> Unit,
     onAboutClick: () -> Unit,
 ) {
     Scaffold(topBar = { TopAppBar(title = { Text("Profile") }) }) { padding ->
@@ -73,6 +76,7 @@ internal fun ProfileScreen(
             ProfileRow("Favourite item", favourite?.let { "Item #$it" } ?: "None – pick one (returns a result)", onFavouriteClick)
             ProfileRow("My orders", "Switches to the Orders tab", onOrdersClick)
             ProfileRow("Settings", "Pushed on the Profile tab", onSettingsClick)
+            ProfileRow("Contact support", "3-step form with one shared ViewModel", onSupportClick)
             ProfileRow("About", "Pushed on the Profile tab", onAboutClick)
             if (isSignedIn) {
                 ProfileRow("Sign out", "Resets every tab", onSignOutClick)

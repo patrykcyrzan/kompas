@@ -58,6 +58,7 @@ internal fun OrdersRoute(
 internal fun OrderDetailsRoute(
     navKey: OrderDetailsNavKey,
     onItemClick: (itemId: ItemId) -> Unit,
+    onReportProblemClick: () -> Unit,
     onBackClick: () -> Unit,
     viewModel: OrderDetailsViewModel = hiltViewModel<OrderDetailsViewModel, OrderDetailsViewModel.Factory>(
         creationCallback = { factory -> factory.create(navKey) },
@@ -92,6 +93,13 @@ internal fun OrderDetailsRoute(
                         modifier = Modifier.clickable { onItemClick(itemId) },
                     )
                     HorizontalDivider()
+                }
+                item {
+                    ListItem(
+                        headlineContent = { Text("Report a problem") },
+                        supportingContent = { Text("3-step form, prefilled with this order") },
+                        modifier = Modifier.clickable(onClick = onReportProblemClick),
+                    )
                 }
             }
         }

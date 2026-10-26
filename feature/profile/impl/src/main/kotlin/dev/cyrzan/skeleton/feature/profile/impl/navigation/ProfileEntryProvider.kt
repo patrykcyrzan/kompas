@@ -17,6 +17,7 @@ import dev.cyrzan.skeleton.feature.profile.api.ProfileNavKey
 import dev.cyrzan.skeleton.feature.profile.impl.AboutScreen
 import dev.cyrzan.skeleton.feature.profile.impl.ProfileRoute
 import dev.cyrzan.skeleton.feature.settings.api.SettingsNavKey
+import dev.cyrzan.skeleton.feature.support.api.SupportRequestNavKey
 import javax.inject.Inject
 
 internal class ProfileEntryProvider @Inject constructor() : EntryProviderInstaller {
@@ -31,6 +32,7 @@ internal class ProfileEntryProvider @Inject constructor() : EntryProviderInstall
                 // OrdersNavKey is a tab root: navigate() switches tabs instead of pushing it here.
                 onOrdersClick = { navigator.navigate(OrdersNavKey) },
                 onSettingsClick = { navigator.navigate(SettingsNavKey) },
+                onSupportClick = { navigator.navigate(SupportRequestNavKey()) },
                 onAboutClick = { navigator.navigate(AboutNavKey) },
             )
         }
