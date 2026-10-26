@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
@@ -24,8 +25,8 @@ import androidx.navigation3.ui.NavDisplay
  *
  * - Every stack (each tab and the flow) is decorated all the time, also when hidden, so switching
  *   tabs keeps each screen's saved UI state and ViewModels.
- * - Entries are scoped to their stack: the same key (e.g. item #7) on two tabs is two independent
- *   screens, each with its own state.
+ * - Every entry has its own identity (see [entryId]): the same key on two tabs, or twice on one
+ *   stack (item #7 → item #8 → item #7), is two independent screens with their own state.
  * - The NavDisplay shows `start tab + selected tab + flow`, so predictive back previews exactly what
  *   [NavigationState.goBack] will show (from another tab's root: the start tab).
  * - The bottom bar is hidden while a flow is open.
@@ -71,15 +72,17 @@ private fun rememberStackEntries(
     scope: String,
     backStack: List<NavKey>,
     entryProvider: (NavKey) -> NavEntry<NavKey>,
-): List<NavEntry<NavKey>> = rememberDecoratedNavEntries(
-    backStack = backStack,
+): List<NavEntry<NavKey>> {
     // Own decorators per stack: saved state and ViewModels are never shared between stacks.
-    entryDecorators = listOf(
-        rememberSaveableStateHolderNavEntryDecorator(),
-        rememberViewModelStoreNavEntryDecorator(),
-    ),
-    entryProvider = { key ->
-        val entry = entryProvider(key)
-        NavEntry(key, contentKey = "$scope/${entry.contentKey}", metadata = entry.metadata) { entry.Content() }
-    },
-)
+    val decorators = listOf(
+        rememberSaveableStateHolderNavEntryDecorator<NavKey>(),
+        rememberViewModelStoreNavEntryDecorator<NavKey>(),
+    )
+    val entries = remember(backStack.toList()) {
+        backStack.mapIndexed { index, key ->
+            val entry = entryProvider(key)
+            NavEntry(key, contentKey = entryId(scope, index, key), metadata = entry.metadata) { entry.Content() }
+        }
+    }
+    return rememberDecoratedNavEntries(entries, decorators)
+}
