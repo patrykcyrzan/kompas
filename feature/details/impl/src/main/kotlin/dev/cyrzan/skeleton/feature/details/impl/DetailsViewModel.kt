@@ -32,9 +32,16 @@ internal class DetailsViewModel @AssistedInject constructor(
             initialValue = DetailsUiState.Loading,
         )
 
+    /** Shows which ViewModel instance backs this screen – every entry on the back stack should get its own. */
+    val instance: Int = nextInstance++
+
     @AssistedFactory
     interface Factory {
         fun create(navKey: DetailsNavKey): DetailsViewModel
+    }
+
+    private companion object {
+        var nextInstance = 1
     }
 }
 

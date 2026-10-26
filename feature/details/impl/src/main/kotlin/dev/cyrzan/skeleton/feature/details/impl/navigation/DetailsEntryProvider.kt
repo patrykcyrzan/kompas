@@ -19,6 +19,8 @@ internal class DetailsEntryProvider @Inject constructor() : EntryProviderInstall
         entry<DetailsNavKey> { key ->
             DetailsRoute(
                 navKey = key,
+                // The same screen again, with other arguments – pushed on the current stack.
+                onRelatedClick = { itemId -> navigator.navigate(DetailsNavKey(itemId)) },
                 onBackClick = { navigator.goBack() },
             )
         }

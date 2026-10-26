@@ -12,11 +12,13 @@ import javax.inject.Inject
 internal class FakeItemsRepository @Inject constructor() : ItemsRepository {
 
     private val items = MutableStateFlow(
-        List(20) { index ->
+        (1..ITEM_COUNT).map { number ->
             Item(
-                id = "${index + 1}",
-                title = "Item #${index + 1}",
-                description = "Description of item #${index + 1}.",
+                id = "$number",
+                title = "Item #$number",
+                description = "Description of item #$number.",
+                // Neighbours: lets the same details screen be opened again with other (or the same) arguments.
+                relatedIds = listOf(number - 1, number + 1).filter { it in 1..ITEM_COUNT }.map(Int::toString),
             )
         },
     )
@@ -29,4 +31,8 @@ internal class FakeItemsRepository @Inject constructor() : ItemsRepository {
     override fun observePromo(): Flow<Promo?> = flowOf(
         Promo(title = "Featured: Item #7", link = "https://kompas.example.com/items/7"),
     )
+
+    private companion object {
+        const val ITEM_COUNT = 20
+    }
 }
