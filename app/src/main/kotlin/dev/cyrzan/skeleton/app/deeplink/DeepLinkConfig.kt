@@ -13,6 +13,8 @@ import dev.cyrzan.skeleton.feature.orders.api.OrderDetailsNavKey
 import dev.cyrzan.skeleton.feature.orders.api.OrdersNavKey
 import dev.cyrzan.skeleton.feature.profile.api.AboutNavKey
 import dev.cyrzan.skeleton.feature.profile.api.ProfileNavKey
+import dev.cyrzan.skeleton.feature.search.api.SearchNavKey
+import dev.cyrzan.skeleton.feature.search.api.SearchResultsNavKey
 import dev.cyrzan.skeleton.feature.settings.api.SettingsNavKey
 
 /**
@@ -39,6 +41,9 @@ internal fun parentOf(destination: Destination): Destination? = when (destinatio
     is DetailsNavKey -> HomeNavKey
     is OrderDetailsNavKey -> OrdersNavKey
     SettingsNavKey, AboutNavKey -> ProfileNavKey
+    is SearchNavKey -> HomeNavKey
+    // Back from results opened by a link: the form, prefilled with the same criteria.
+    is SearchResultsNavKey -> SearchNavKey(initial = destination.criteria)
     else -> HomeNavKey
 }
 

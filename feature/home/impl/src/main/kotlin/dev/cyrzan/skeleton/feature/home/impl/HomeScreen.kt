@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ListItemDefaults
@@ -35,6 +36,7 @@ import dev.cyrzan.skeleton.core.model.Promo
 internal fun HomeRoute(
     onItemClick: (Item) -> Unit,
     onPromoClick: (Promo) -> Unit,
+    onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -43,6 +45,7 @@ internal fun HomeRoute(
         uiState = uiState,
         onItemClick = onItemClick,
         onPromoClick = onPromoClick,
+        onSearchClick = onSearchClick,
         onSettingsClick = onSettingsClick,
     )
 }
@@ -53,6 +56,7 @@ internal fun HomeScreen(
     uiState: HomeUiState,
     onItemClick: (Item) -> Unit,
     onPromoClick: (Promo) -> Unit,
+    onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
     Scaffold(
@@ -60,6 +64,9 @@ internal fun HomeScreen(
             TopAppBar(
                 title = { Text("Home") },
                 actions = {
+                    IconButton(onClick = onSearchClick) {
+                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    }
                     IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
@@ -114,6 +121,7 @@ private fun HomeScreenPreview() {
             ),
             onItemClick = {},
             onPromoClick = {},
+            onSearchClick = {},
             onSettingsClick = {},
         )
     }

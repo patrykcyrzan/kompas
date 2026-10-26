@@ -6,6 +6,7 @@ import dev.cyrzan.skeleton.core.deeplink.AuthenticationGuard
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkResult
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkSource
 import dev.cyrzan.skeleton.core.deeplink.Destination
+import dev.cyrzan.skeleton.core.model.ItemCategory
 import dev.cyrzan.skeleton.core.model.ItemId
 import dev.cyrzan.skeleton.core.model.OrderId
 import dev.cyrzan.skeleton.feature.details.api.DetailsDeepLinks
@@ -19,6 +20,11 @@ import dev.cyrzan.skeleton.feature.orders.api.OrdersNavKey
 import dev.cyrzan.skeleton.feature.profile.api.AboutNavKey
 import dev.cyrzan.skeleton.feature.profile.api.ProfileDeepLinks
 import dev.cyrzan.skeleton.feature.profile.api.ProfileNavKey
+import dev.cyrzan.skeleton.feature.search.api.SearchCriteria
+import dev.cyrzan.skeleton.feature.search.api.SearchDeepLinks
+import dev.cyrzan.skeleton.feature.search.api.SearchNavKey
+import dev.cyrzan.skeleton.feature.search.api.SearchResultsNavKey
+import dev.cyrzan.skeleton.feature.search.api.SearchSort
 import dev.cyrzan.skeleton.feature.settings.api.SettingsDeepLinks
 import dev.cyrzan.skeleton.feature.settings.api.SettingsNavKey
 import org.junit.Assert.assertEquals
@@ -36,6 +42,7 @@ class DeepLinkContractTest {
         OrdersDeepLinks.orderDetails,
         ProfileDeepLinks.profile,
         ProfileDeepLinks.about,
+        SearchDeepLinks.results,
     )
 
     private val resolver = createDeepLinkResolver(routes = routes)
@@ -50,6 +57,10 @@ class DeepLinkContractTest {
         "kompas://profile" to listOf(ProfileNavKey),
         "kompas://settings" to listOf(ProfileNavKey, SettingsNavKey),
         "kompas://about" to listOf(ProfileNavKey, AboutNavKey),
+        "kompas://search?q=item&category=books&maxPrice=100&sort=price_asc" to SearchCriteria(
+            query = "item", category = ItemCategory.Books, maxPrice = 100, sort = SearchSort.PriceAscending,
+        ).let { criteria -> listOf(HomeNavKey, SearchNavKey(criteria), SearchResultsNavKey(criteria)) },
+        "kompas://search" to listOf(HomeNavKey, SearchNavKey(SearchCriteria()), SearchResultsNavKey(SearchCriteria())),
     )
 
     @Test
@@ -83,6 +94,8 @@ class DeepLinkContractTest {
         listOf(
             "kompas://items/..", "kompas://items/1%2F..%2Fadmin", "kompas://items/a.b", "kompas://items/%27%20OR%201%3D1",
             "kompas://orders/abc", "kompas://orders/-1", "kompas://orders/007",
+            "kompas://search?category=cars", "kompas://search?maxPrice=-5", "kompas://search?sort=random",
+            "kompas://search?q=" + "x".repeat(101),
         ).forEach { uri ->
             val result = resolver.resolve(uri, DeepLinkSource.External)
             assertTrue("$uri -> $result", result is DeepLinkResult.Invalid || result == DeepLinkResult.NotMatched)

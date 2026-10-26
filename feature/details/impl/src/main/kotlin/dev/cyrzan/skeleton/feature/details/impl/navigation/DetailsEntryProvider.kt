@@ -13,6 +13,8 @@ import dev.cyrzan.skeleton.feature.details.api.DetailsNavKey
 import dev.cyrzan.skeleton.feature.details.api.ItemPickerNavKey
 import dev.cyrzan.skeleton.feature.details.api.ItemPickerResult
 import dev.cyrzan.skeleton.feature.details.impl.DetailsRoute
+import dev.cyrzan.skeleton.feature.search.api.SearchCriteria
+import dev.cyrzan.skeleton.feature.search.api.SearchResultsNavKey
 import dev.cyrzan.skeleton.feature.details.impl.ItemPickerRoute
 import javax.inject.Inject
 
@@ -24,6 +26,8 @@ internal class DetailsEntryProvider @Inject constructor() : EntryProviderInstall
                 navKey = key,
                 // The same screen again, with other arguments – pushed on the current stack.
                 onRelatedClick = { itemId -> navigator.navigate(DetailsNavKey(itemId)) },
+                // Another feature's screen with a value-object argument.
+                onCategoryClick = { category -> navigator.navigate(SearchResultsNavKey(SearchCriteria(category = category))) },
                 onBackClick = { navigator.goBack() },
             )
         }

@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.cyrzan.skeleton.core.model.ItemCategory
 import dev.cyrzan.skeleton.core.model.ItemId
 import dev.cyrzan.skeleton.feature.details.api.DetailsNavKey
 
@@ -30,13 +31,14 @@ import dev.cyrzan.skeleton.feature.details.api.DetailsNavKey
 internal fun DetailsRoute(
     navKey: DetailsNavKey,
     onRelatedClick: (itemId: ItemId) -> Unit,
+    onCategoryClick: (ItemCategory) -> Unit,
     onBackClick: () -> Unit,
     viewModel: DetailsViewModel = hiltViewModel<DetailsViewModel, DetailsViewModel.Factory>(
         creationCallback = { factory -> factory.create(navKey) },
     ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    DetailsScreen(uiState = uiState, instance = viewModel.instance, onRelatedClick = onRelatedClick, onBackClick = onBackClick)
+    DetailsScreen(uiState = uiState, instance = viewModel.instance, onRelatedClick = onRelatedClick, onCategoryClick = onCategoryClick, onBackClick = onBackClick)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,6 +47,7 @@ internal fun DetailsScreen(
     uiState: DetailsUiState,
     instance: Int,
     onRelatedClick: (itemId: ItemId) -> Unit,
+    onCategoryClick: (ItemCategory) -> Unit,
     onBackClick: () -> Unit,
 ) {
     Scaffold(
@@ -69,7 +72,13 @@ internal fun DetailsScreen(
                 is DetailsUiState.Success -> Column {
                     Text(uiState.item.title, style = MaterialTheme.typography.headlineMedium)
                     Text(uiState.item.description, style = MaterialTheme.typography.bodyLarge)
+                    Text("${uiState.item.category} · ${uiState.item.price} zł", style = MaterialTheme.typography.bodyMedium)
                     Text("ViewModel #$instance", style = MaterialTheme.typography.labelMedium)
+                    ListItem(
+                        headlineContent = { Text("More in ${uiState.item.category}") },
+                        supportingContent = { Text("Search results opened with criteria") },
+                        modifier = Modifier.clickable { onCategoryClick(uiState.item.category) },
+                    )
                     Text("Related", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 24.dp))
                     uiState.item.relatedIds.forEach { relatedId ->
                         ListItem(
