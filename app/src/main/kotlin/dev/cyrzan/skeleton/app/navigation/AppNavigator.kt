@@ -2,6 +2,7 @@ package dev.cyrzan.skeleton.app.navigation
 
 import androidx.compose.runtime.Stable
 import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.result.ResultEventBus
 import dev.cyrzan.skeleton.app.deeplink.DeepLinkDispatcher
 import dev.cyrzan.skeleton.app.deeplink.toNavKey
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkResult
@@ -10,6 +11,7 @@ import dev.cyrzan.skeleton.core.deeplink.Destination
 import dev.cyrzan.skeleton.core.navigation.NavigationState
 import dev.cyrzan.skeleton.core.navigation.Navigator
 import dev.cyrzan.skeleton.core.navigation.OpenLinkResult
+import dev.cyrzan.skeleton.core.navigation.ResultKey
 
 /**
  * The [Navigator] features get: [NavigationState] operations + links, all going through the deep link pipeline.
@@ -20,6 +22,7 @@ import dev.cyrzan.skeleton.core.navigation.OpenLinkResult
 @Stable
 internal class AppNavigator(
     private val deepLinks: DeepLinkDispatcher,
+    private val results: ResultEventBus,
 ) : Navigator {
 
     lateinit var state: NavigationState
@@ -27,6 +30,11 @@ internal class AppNavigator(
     override fun navigate(key: NavKey) = state.navigate(key)
 
     override fun goBack(): Boolean = state.goBack()
+
+    override fun <T : Any> goBackWithResult(key: ResultKey<T>, result: T) {
+        results.sendResult(key.name, result)
+        state.goBack()
+    }
 
     override fun closeFlow() = state.closeFlow()
 

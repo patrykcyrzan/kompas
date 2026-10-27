@@ -14,6 +14,7 @@ import dev.cyrzan.skeleton.app.deeplink.DeepLinkDispatcher
 import dev.cyrzan.skeleton.core.navigation.AppNavDisplay
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.isFullScreen
+import dev.cyrzan.skeleton.core.navigation.rememberAppResultEventBus
 import dev.cyrzan.skeleton.core.navigation.rememberNavigationState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +30,8 @@ internal fun SkeletonNavHost(
     isSignedIn: StateFlow<Boolean>,
     modifier: Modifier = Modifier,
 ) {
-    val navigator = remember(deepLinkDispatcher) { AppNavigator(deepLinkDispatcher) }
+    val resultEventBus = rememberAppResultEventBus()
+    val navigator = remember(deepLinkDispatcher, resultEventBus) { AppNavigator(deepLinkDispatcher, resultEventBus) }
     val entries = remember(entryProviderInstallers, navigator) {
         entryProvider {
             entryProviderInstallers.forEach { installer ->
@@ -66,6 +68,7 @@ internal fun SkeletonNavHost(
             }
         },
         modifier = modifier,
+        resultEventBus = resultEventBus,
         onBack = { navigator.goBack() },
     )
 }

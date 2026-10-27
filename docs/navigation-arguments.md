@@ -52,7 +52,7 @@ Kto z czego korzysta:
 
 ```
 orders:impl   ──navigate(DetailsNavKey(itemId))──▶  details:api   (klucz)
-profile:impl  ──navigate(ItemPickerNavKey(...))──▶  details:api   (klucz + ItemPickerResult.KEY)
+profile:impl  ──navigate(ItemPickerNavKey(...))──▶  details:api   (klucz + ItemPickerResult)
 details:impl  ── entry<DetailsNavKey> { ... }       (ekran, ViewModel – nikt spoza go nie zna)
 ```
 
@@ -178,7 +178,13 @@ Feature'y nie muszą nic z tym robić. Nie trzeba też blokować duplikatów ani
 
 ## 6. Wyniki – „wybierz i oddaj”
 
-Wyniki idą przez **wbudowany w Nav3 1.2 `ResultEventBus`** (`androidx.navigation3.runtime.result`). Nie ma własnego mechanizmu: `AppNavDisplay` tylko udostępnia jedną szynę dla całej aplikacji.
+Wyniki idą przez **wbudowany w Nav3 1.2 `ResultEventBus`** (`androidx.navigation3.runtime.result`). `core:navigation` dokłada nad nim tylko cienką warstwę (`ResultKey.kt`):
+
+- **`ResultKey<T>`**: typowany klucz wyniku. Typ jest częścią klucza, więc nadawca i odbiorca nie mogą się co do niego rozminąć.
+- **`navigator.goBackWithResult(key, value)`**: wysyła wynik i wraca jednym wywołaniem, tak jak cała reszta nawigacji idzie przez `Navigator`.
+- **`ResultEffect(key) { ... }`**: odbiór. Pod spodem to `ResultEffect` z Nav3 z nazwą klucza.
+
+Szyna jest jedna dla całej aplikacji. `SkeletonNavHost` tworzy ją przez `rememberAppResultEventBus()` i przekazuje do `AppNavigator` (wysyła) i do `AppNavDisplay` (udostępnia ekranom).
 
 ### 6.1 Kiedy wynik, a kiedy repozytorium
 
@@ -195,21 +201,15 @@ Wyniki idą przez **wbudowany w Nav3 1.2 `ResultEventBus`** (`androidx.navigatio
 @Serializable
 data class ItemPickerNavKey(val selected: ItemId? = null) : NavKey
 
-object ItemPickerResult {
-    const val KEY: String = "dev.cyrzan.skeleton.feature.details.itemPicker"
-}
+val ItemPickerResult = ResultKey<ItemId>("dev.cyrzan.skeleton.feature.details.itemPicker")
 ```
 
 ```kotlin
 // details:impl – picker wysyła wybór i wraca
 entry<ItemPickerNavKey> { key ->
-    val resultBus = LocalResultEventBus.current
     ItemPickerRoute(
         selected = key.selected,
-        onPick = { itemId ->
-            resultBus.sendResult(ItemPickerResult.KEY, itemId)
-            navigator.goBack()
-        },
+        onPick = { itemId -> navigator.goBackWithResult(ItemPickerResult, itemId) },
         onBackClick = { navigator.goBack() },   // anulowanie = brak wyniku
     )
 }
@@ -223,7 +223,7 @@ entry<ProfileNavKey> {
 
 @Composable
 internal fun ProfileRoute(..., viewModel: ProfileViewModel = hiltViewModel()) {
-    ResultEffect<ItemId>(ItemPickerResult.KEY) { itemId -> viewModel.onFavouritePicked(itemId) }
+    ResultEffect(ItemPickerResult) { itemId -> viewModel.onFavouritePicked(itemId) }   // itemId: ItemId
     ...
 }
 
@@ -233,13 +233,16 @@ fun onFavouritePicked(itemId: ItemId) {
 }
 ```
 
-**Jawny klucz zamiast domyślnego.** `ResultEffect<ItemId>()` bez klucza używa nazwy typu, więc każdy ekran zwracający `ItemId` wpadałby do tego samego kanału. Klucz należy do kontraktu zwracającego ekranu i leży w jego `api`, obok klucza nawigacji.
+**Własny klucz zamiast domyślnego.** `ResultEffect<ItemId>()` z Nav3 bez klucza używa nazwy typu, więc każdy ekran zwracający `ItemId` wpadałby do tego samego kanału. Klucz należy do kontraktu zwracającego ekranu i leży w jego `api`, obok klucza nawigacji.
+
+**Dlaczego typowany.** Przy gołym stringu typ jest tylko u odbiorcy (`ResultEffect<ItemId>("…")`). Nadawca mógłby wysłać `String` pod ten sam klucz, a błąd wyszedłby dopiero przy rzutowaniu w działającej aplikacji. `goBackWithResult(ItemPickerResult, "5")` się nie skompiluje.
 
 ### 6.3 Jak to działa i czego się spodziewać
 
 ```
 Profile ──navigate──▶ ItemPicker
-                         │ sendResult("…itemPicker", ItemId("5")); goBack()
+                         │ goBackWithResult(ItemPickerResult, ItemId("5"))
+                         │   = sendResult("…itemPicker", …) + goBack()
                          ▼
 ResultEventBus: kanał "…itemPicker" (buforowany) ── ItemId("5")
                          ▼
@@ -247,8 +250,8 @@ Profile znów w kompozycji → ResultEffect zbiera z kanału → onFavouritePick
 ```
 
 - **Kanał per klucz, nie per ekran.** Wynik dostaje **ten, kto akurat zbiera** dany klucz, i tylko raz. W praktyce to ekran, który otworzył picker, bo tylko on ma `ResultEffect` na ten klucz i to on jest pod pickerem.
-- **Buforowanie.** Jeśli nikt akurat nie zbiera, wynik czeka w kanale i trafi do **następnego** ekranu, który zacznie zbierać ten klucz. Dlatego `ResultEffect` stawiaj tylko w ekranie, który otwiera picker, a klucz ma być unikalny dla kontraktu. W razie potrzeby `resultBus.removeResult(KEY)` czyści kanał.
-- **Rotacja.** Szyna jest trzymana w `ViewModel` aktywności (`ResultEventBusHolder`), więc wynik wysłany tuż przed rotacją nie ginie. Domyślne `rememberResultEventBus()` by go zgubiło.
+- **Buforowanie.** Jeśli nikt akurat nie zbiera, wynik czeka w kanale i trafi do **następnego** ekranu, który zacznie zbierać ten klucz. Dlatego `ResultEffect` stawiaj tylko w ekranie, który otwiera picker, a klucz ma być unikalny dla kontraktu. W razie potrzeby `LocalResultEventBus.current.removeResult(key.name)` czyści kanał.
+- **Rotacja.** Szyna jest trzymana w `ViewModel` aktywności (`rememberAppResultEventBus()`), więc wynik wysłany tuż przed rotacją nie ginie. Domyślne `rememberResultEventBus()` by go zgubiło.
 - **Śmierć procesu.** Szyna nie jest zapisywana. Wynik żyje ułamek sekundy, a odbiorca (ViewModel) zapisuje go u siebie, np. w `SavedStateHandle`. Gdy proces zginie, kiedy picker jest otwarty, oba ekrany odtworzą się ze stosu, a wybór zadziała normalnie.
 
 ### 6.4 Czego nie robić
@@ -256,9 +259,10 @@ Profile znów w kompozycji → ResultEffect zbiera z kanału → onFavouritePick
 | Antywzorzec | Problem |
 |---|---|
 | Callback w kluczu (`ItemPickerNavKey(onPick = ...)`) | nie da się go zapisać; po śmierci procesu znika |
-| `ResultEffect<ItemId>()` bez klucza | wszystkie wyniki typu `ItemId` w jednym kanale; wynik jednego pickera może trafić do ekranu, który czeka na inny |
+| `ResultEffect<ItemId>()` z Nav3 bez klucza albo z gołym stringiem | wszystkie wyniki typu `ItemId` w jednym kanale; wynik jednego pickera może trafić do ekranu, który czeka na inny |
 | `ResultEffect` na ekranie, który nie otwiera pickera | ten ekran może „przechwycić” wynik przeznaczony dla innego |
 | Wspólny ViewModel „wyników” wstrzykiwany do obu ekranów | ukryte powiązanie; nie wiadomo, kto i kiedy czyta |
+| Ręczne `sendResult(...)` + `goBack()` w ekranie | dwa kroki, które można rozdzielić albo pominąć; typ niesprawdzany. Używaj `goBackWithResult` |
 | Klucz wyniku w module odbiorcy | to zwracający ekran definiuje, co zwraca. Klucz leży obok jego klucza nawigacji |
 
 ---
@@ -430,7 +434,7 @@ Stan (a nie jednorazowe „zdarzenie” w `Channel`) sprawia, że nic nie ginie 
 4. **ViewModel z `@AssistedInject` i `@Assisted navKey: XNavKey`**, a w Route `hiltViewModel<VM, Factory> { it.create(navKey) }`.
 5. **Entry provider**: `entry<XNavKey> { key -> XRoute(navKey = key, ...) }`.
 6. **Klucze list w UI**: `key = { it.id.value }`, nigdy sam `value class`.
-7. **Jeśli ekran zwraca wynik**: `object XResult { const val KEY = "…" }` obok klucza, a w ekranie `LocalResultEventBus.current.sendResult(XResult.KEY, value)` i `navigator.goBack()`. Odbiorca woła `ResultEffect<T>(XResult.KEY) { vm.onX(it) }` i zapisuje wynik u siebie.
+7. **Jeśli ekran zwraca wynik**: `val XResult = ResultKey<T>("<pakiet feature'a>.x")` obok klucza, a w ekranie `navigator.goBackWithResult(XResult, value)`. Odbiorca woła `ResultEffect(XResult) { vm.onX(it) }` i zapisuje wynik u siebie.
 8. **Inny feature, który chce otworzyć ekran**: dodaje `implementation(projects.feature.x.api)`. Nigdy `impl`.
 
 ---

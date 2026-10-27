@@ -2,10 +2,11 @@ package dev.cyrzan.skeleton.feature.details.api
 
 import androidx.navigation3.runtime.NavKey
 import dev.cyrzan.skeleton.core.model.ItemId
+import dev.cyrzan.skeleton.core.navigation.ResultKey
 import kotlinx.serialization.Serializable
 
 /**
- * Lets the user choose an item and returns its [ItemId] under [ItemPickerResult.KEY].
+ * Lets the user choose an item and returns its [ItemId] under [ItemPickerResult].
  * Not a [dev.cyrzan.skeleton.core.deeplink.Destination]: a picker only makes sense opened by a screen
  * that waits for its result, never from a link.
  *
@@ -15,14 +16,12 @@ import kotlinx.serialization.Serializable
 data class ItemPickerNavKey(val selected: ItemId? = null) : NavKey
 
 /**
- * Result of [ItemPickerNavKey], sent through Nav3's ResultEventBus:
+ * Result of [ItemPickerNavKey]:
  *
  * ```
- * ResultEffect<ItemId>(ItemPickerResult.KEY) { itemId -> ... }
+ * ResultEffect(ItemPickerResult) { itemId -> ... }
  * ```
  *
- * An explicit key (not the default one derived from the type): other screens may return an [ItemId] too.
+ * Its own key, not one per type: other screens may return an [ItemId] too.
  */
-object ItemPickerResult {
-    const val KEY: String = "dev.cyrzan.skeleton.feature.details.itemPicker"
-}
+val ItemPickerResult = ResultKey<ItemId>("dev.cyrzan.skeleton.feature.details.itemPicker")

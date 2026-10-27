@@ -16,9 +16,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.rememberViewModelStoreProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
@@ -40,7 +38,8 @@ import androidx.savedstate.compose.LocalSavedStateRegistryOwner
  *   [NavigationState.goBack] will show (from another tab's root: the start tab).
  * - The bottom bar is hidden while a flow is open.
  * - Screens of one multi-screen flow can share ViewModels (see [sharedViewModelScope]).
- * - Results between screens go through Nav3's [ResultEventBus].
+ * - Results between screens go through Nav3's [ResultEventBus] ([resultEventBus] – the one the
+ *   navigator sends to with [Navigator.goBackWithResult]).
  */
 @Composable
 fun AppNavDisplay(
@@ -48,6 +47,7 @@ fun AppNavDisplay(
     entryProvider: (NavKey) -> NavEntry<NavKey>,
     bottomBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    resultEventBus: ResultEventBus = rememberAppResultEventBus(),
     onBack: () -> Unit = { state.goBack() },
 ) {
     val tabs = state.tabs
@@ -65,10 +65,6 @@ fun AppNavDisplay(
         addAll(flowStack.entries)
     }
     val showBottomBar = !state.isFlowOpen
-
-    // Nav3's result bus for "pick and return" (ResultEffect / sendResult), one for the whole app.
-    // Kept in a ViewModel: a result sent right before a configuration change is not lost.
-    val resultEventBus = viewModel<ResultEventBusHolder>().bus
 
     CompositionLocalProvider(
         LocalResultEventBus provides resultEventBus,
@@ -88,10 +84,6 @@ fun AppNavDisplay(
             }
         }
     }
-}
-
-internal class ResultEventBusHolder : ViewModel() {
-    val bus = ResultEventBus()
 }
 
 private class StackEntries(val entries: List<NavEntry<NavKey>>, val sharedScopeIds: Set<String>)

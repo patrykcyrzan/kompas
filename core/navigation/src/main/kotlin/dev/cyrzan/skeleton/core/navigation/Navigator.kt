@@ -14,13 +14,20 @@ interface Navigator {
 
     /**
      * Pushes [key] on top of the selected tab. A tab root (e.g. `HomeNavKey`) instead switches
-     * to that tab and shows its root. Full-screen screens (decided by the app, e.g. login) open
-     * above the tabs – and while such a flow is open, everything is pushed onto it.
+     * to that tab and shows its root. Full-screen screens (entries declared with [fullScreen], e.g.
+     * login) open above the tabs – and while such a flow is open, everything is pushed onto it.
      */
     fun navigate(key: NavKey)
 
     /** Pops the top entry. Returns `false` when there is nothing to go back to. */
     fun goBack(): Boolean
+
+    /**
+     * Hands [result] to the screen waiting for it (`ResultEffect(key) { ... }`) and goes back to it.
+     * The result is delivered once that screen is composed again; if nobody waits for [key], it stays
+     * buffered until someone does – return results only from screens opened by their receiver.
+     */
+    fun <T : Any> goBackWithResult(key: ResultKey<T>, result: T)
 
     /** Closes the whole full-screen flow (e.g. a finished sign-in) and returns to the tabs. */
     fun closeFlow()
