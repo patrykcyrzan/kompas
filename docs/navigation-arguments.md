@@ -15,7 +15,7 @@ Model stanu (zakładki, flow, `AppNavDisplay`) opisuje [navigation.md](navigatio
 5. [Tożsamość wpisu – ten sam ekran dwa razy](#5-tożsamość-wpisu--ten-sam-ekran-dwa-razy)
 6. [Wyniki – „wybierz i oddaj”](#6-wyniki--wybierz-i-oddaj)
 7. [Złożone argumenty – obiekt wartości](#7-złożone-argumenty--obiekt-wartości)
-8. [Formularz na kilka ekranów – wspólny ViewModel](#8-formularz-na-kilka-ekranów--wspólny-viewmodel)
+8. [Formularz w kilku krokach](#8-formularz-w-kilku-krokach)
 9. [Nawigacja z ViewModelu](#9-nawigacja-z-viewmodelu)
 10. [Argumenty a zakładki](#10-argumenty-a-zakładki)
 11. [Checklista: nowy ekran z argumentami](#11-checklista-nowy-ekran-z-argumentami)
@@ -315,82 +315,80 @@ Kto buduje kryteria:
 |---|---|
 | Obiekt z ID | ID + repozytorium (cache, żeby nie migało) |
 | Filtry, kryteria, warianty (`sealed`) | mały `@Serializable` typ w `api` celu |
-| Szkic na kilka ekranów | wspólny ViewModel (rozdział 8) albo repozytorium szkicu z `DraftId` |
+| Formularz w kilku krokach | jeden ekran z krokami jako stan (rozdział 8) albo repozytorium szkicu z `DraftId` |
 | Jednorazowe dane bez ID | token + magazyn tymczasowy; odbiorca obsługuje brak |
 | Plik / obraz | `Uri` jako `String` |
 
 ---
 
-## 8. Formularz na kilka ekranów – wspólny ViewModel
+## 8. Formularz w kilku krokach
 
 Przykład w kodzie: **Contact support** (Profil albo szczegóły zamówienia → *Report a problem*). Formularz ma trzy kroki (temat → opis i e-mail → podsumowanie i *Send*) i działa jako flow pełnoekranowy.
 
-### 8.1 Ocena: czy wspólny ViewModel to dobry pomysł?
+### 8.1 Jeden ekran, kroki jako stan
 
-**Tak, dla krótkiego formularza wysyłanego na końcu to dobry domyślny wybór.** Jeden stan, jedna walidacja, jedno `submit()`. Kroki nie przekazują sobie danych, więc nie ma kopii, które się rozjeżdżają. Krok 2 i 3 nie mają argumentów, bo dane są w ViewModelu.
+Cały formularz to **jeden wpis nawigacji** (`SupportRequestNavKey`) z **jednym ViewModelem**. Bieżący krok nie jest na stosie, tylko w stanie ViewModelu:
 
-Trzeba jednak pamiętać o kosztach:
+```
+flow: [SupportRequest(orderId=1001)]      ← jeden wpis, niezależnie od kroku
+SupportViewModel.state.step = Details     ← krok to stan (SavedStateHandle)
+```
 
-| Ryzyko | Co się dzieje | Jak to rozwiązano tutaj |
-|---|---|---|
-| **Nav3 nie ma ViewModeli współdzielonych przez kilka wpisów** (brak „grafów” jak w Navigation 2) | trzeba samemu zbudować zakres | `sharedViewModelScope(...)` + `rememberSharedViewModelScope()` w `core:navigation` |
-| **Śmierć procesu na kroku 3** | Naiwne rozwiązanie (krok 2 i 3 „pożyczają” ViewModel kroku 1) gubi wszystko, co wpisano po opuszczeniu kroku 1, bo zapisany stan kroku 1 zamraża się, gdy ten ekran znika z kompozycji. | Zakres ma **własny zapis stanu**, utrzymywany przez `AppNavDisplay`, dopóki zakres żyje. Pola formularza są w `SavedStateHandle`. |
-| **Który krok tworzy ViewModel?** | Po śmierci procesu tworzy go widoczny krok (np. 3), a nie krok 1 | ViewModel jest tworzony zawsze z **kluczem pierwszego kroku** (`scope.firstKey`), niezależnie od tego, który krok go tworzy |
-| **Kiedy go czyścić?** | Za wcześnie: utrata danych. Za późno: następny formularz startuje z cudzymi danymi | Zakres żyje dokładnie tyle, ile wpis kroku 1. *Wstecz* z kroku 1, ✕ i *Done* (`closeFlow()`) go czyszczą |
-| **„God ViewModel”** | ViewModel na 3 kroki łatwo rośnie w nieskończoność | Stan formularza to osobna, czysta klasa (`SupportFormState`) z walidacją per krok, testowana bez Androida |
-| **Wejście prosto na krok 3** (link, powiadomienie) | niemożliwe, bo krok 3 nie ma sensu bez 1 i 2 | świadomie: kroki 2 i 3 są `internal`, publiczny jest tylko klucz kroku 1 |
-| **Wysyłka w trakcie śmierci procesu** | żądanie mogło dojść albo nie | numer zgłoszenia jest w `SavedStateHandle`, więc po wysłaniu wynik przetrwa. Ponowna wysyłka po przerwaniu wymaga klucza idempotentności po stronie API (TODO dla prawdziwego backendu) |
+Dlaczego tak:
 
-**Kiedy wybrać coś innego:**
-- **Repozytorium szkicu (`DraftId`)**: gdy szkic ma przetrwać zamknięcie aplikacji („masz niedokończone zgłoszenie”), gdy do kroków da się wejść z kilku miejsc albo gdy formularz jest długi i cenny (np. wniosek kredytowy).
-- **Jeden ekran z krokami w środku** (jeden wpis nawigacji, kroki jako stan): gdy kroki są małe, a przejścia między nimi nie muszą być prawdziwą nawigacją. Wspólny stan jest wtedy za darmo, ale *wstecz* między krokami, predictive back i animacje trzeba obsłużyć samemu.
+- **Wspólny stan bez żadnej infrastruktury.** Nav3 daje ViewModel per wpis. Skoro formularz to jeden wpis, wszystkie kroki widzą ten sam ViewModel.
+- **Śmierć procesu jest obsłużona domyślnie.** Pola i bieżący krok są w `SavedStateHandle` wpisu.
+- **Sprzątanie jest automatyczne.** ViewModel znika razem z wpisem (✕, *wstecz* z kroku 1, *Done*), więc następny formularz startuje pusty.
+- **Na kroki nie da się wejść z zewnątrz.** Publiczny jest tylko klucz formularza, a nie poszczególnych kroków.
 
-### 8.2 Jak tego użyć
+Koszt: *wstecz* między krokami obsługuje sam ekran (`BackHandler`). Predictive back i animacje przejść między krokami (np. `AnimatedContent`) też trzeba dodać samemu, bo to nie jest nawigacja Nav3.
+
+### 8.2 Jak to wygląda w kodzie
 
 ```kotlin
-// support:impl – kroki 2 i 3 są wewnętrzne i nie mają argumentów
-@Serializable internal data object SupportDetailsNavKey : NavKey
-@Serializable internal data object SupportSummaryNavKey : NavKey
-
-// Entry provider: każdy krok (także pierwszy) deklaruje wspólny zakres
-val form = sharedViewModelScope(SupportRequestNavKey::class)
-entry<SupportRequestNavKey>(metadata = fullScreen() + form) { SupportTopicRoute(onNext = { navigator.navigate(SupportDetailsNavKey) }, onClose = { navigator.closeFlow() }) }
-entry<SupportDetailsNavKey>(metadata = form) { SupportDetailsRoute(onNext = { navigator.navigate(SupportSummaryNavKey) }, onBack = { navigator.goBack() }) }
-entry<SupportSummaryNavKey>(metadata = form) { SupportSummaryRoute(onDone = { navigator.closeFlow() }, onBack = { navigator.goBack() }) }
-
-// Jeden helper dla wszystkich kroków
-@Composable
-internal fun supportViewModel(): SupportViewModel {
-    val scope = rememberSharedViewModelScope<SupportRequestNavKey>()
-    return hiltViewModel<SupportViewModel, SupportViewModel.Factory>(scope.owner) { factory -> factory.create(scope.firstKey) }
+// support:impl – jeden wpis, otwierany nad zakładkami
+entry<SupportRequestNavKey>(metadata = fullScreen()) { key ->
+    SupportRoute(navKey = key, onClose = { navigator.closeFlow() })
 }
 
-// ViewModel: argumenty z pierwszego kroku, pola w SavedStateHandle
-@HiltViewModel(assistedFactory = SupportViewModel.Factory::class)
-internal class SupportViewModel @AssistedInject constructor(
-    @Assisted first: SupportRequestNavKey,          // orderId, jeśli otwarty z zamówienia
-    private val savedStateHandle: SavedStateHandle, // zapisywany przez zakres – przeżyje śmierć procesu na każdym kroku
-    private val supportRepository: SupportRepository,
-) : ViewModel()
+@Composable
+internal fun SupportRoute(
+    navKey: SupportRequestNavKey,
+    onClose: () -> Unit,
+    viewModel: SupportViewModel = hiltViewModel<SupportViewModel, SupportViewModel.Factory> { it.create(navKey) },
+) {
+    val form by viewModel.state.collectAsStateWithLifecycle()
+    // Kroki 2 i 3: wstecz = poprzedni krok. Na kroku 1 wstecz obsługuje nawigacja (zamyka flow).
+    BackHandler(enabled = form.step != SupportStep.Topic) {
+        if (!viewModel.previous()) onClose()   // po wysłaniu: zamknij jak „Done”
+    }
+    when (form.step) {
+        SupportStep.Topic -> TopicStep(...)
+        SupportStep.Details -> DetailsStep(...)
+        SupportStep.Summary -> SummaryStep(...)
+    }
+}
 ```
 
-### 8.3 Jak to działa pod spodem
-
-```
-flow: [SupportRequest(orderId=1001), SupportDetails, SupportSummary]
-         └──────────────── zakres "flow/0/SupportRequestNavKey(orderId=1001)" ─────────────┘
-
-AppNavDisplay
- ├─ SaveableStateProvider("flow/0/…")   ← zapis stanu zakresu, składany, DOPÓKI zakres żyje
- ├─ ViewModelStoreProvider["flow/0/…"]  ← jeden ViewModelStore na zakres
- └─ NavDisplay
-      └─ krok N: rememberSharedViewModelScope() → ViewModelStoreOwner(store zakresu, zapis stanu zakresu)
+```kotlin
+// ViewModel: krok i pola w SavedStateHandle, przejścia z walidacją
+fun next() {
+    val form = state.value
+    if (form.canGoNext) savedStateHandle[KEY_STEP] = form.step.next().name
+}
 ```
 
-- **Identyfikator zakresu** to tożsamość wpisu kroku 1 (rozdział 5). Dwa formularze otwarte naraz (np. na dwóch zakładkach albo jeden po drugim na tym samym stosie) są niezależne.
-- **Krok bez kroku 1 pod sobą** to błąd programisty, zgłaszany od razu z czytelnym komunikatem.
-- **Koniec zakresu**: gdy wpis kroku 1 znika ze wszystkich stosów, ViewModel jest czyszczony, ale dopiero gdy ostatni krok opuści kompozycję (po animacji wyjścia). Zapisany stan jest wtedy usuwany.
-- **Testy**: `SharedViewModelScopeTest` (który wpis należy do którego zakresu) i `SupportFormStateTest` (walidacja kroków, brak podwójnej wysyłki).
+Stan formularza to czysta klasa (`SupportFormState`) z walidacją per krok (`canGoNext`, `canSubmit`), testowana bez Androida. Dzięki temu ViewModel nie rośnie w „god ViewModel”.
+
+### 8.3 Kiedy coś innego
+
+| Sytuacja | Rozwiązanie |
+|---|---|
+| Krótki formularz wysyłany na końcu | **jeden ekran z krokami** (jak wyżej) |
+| Szkic ma przetrwać zamknięcie aplikacji („masz niedokończone zgłoszenie”), formularz jest długi i cenny, do kroków da się wejść z kilku miejsc | **repozytorium szkicu**: kroki jako osobne ekrany z argumentem `DraftId`, każdy czyta i zapisuje szkic w repozytorium |
+| Kroki muszą być osobnymi wpisami nawigacji (np. predictive back między krokami, link do konkretnego kroku), a stan ma być tylko w pamięci | **ViewModel współdzielony przez kilka wpisów.** Nav3 tego nie ma (brak „grafów” jak w Navigation 2), a własny zakres wymaga osobnego zapisu stanu, żeby przetrwać śmierć procesu. Na razie świadomie tego nie mamy |
+
+Wysyłka w trakcie śmierci procesu: numer zgłoszenia jest w `SavedStateHandle`, więc po udanej wysyłce przetrwa. Ponowna wysyłka po przerwanym żądaniu wymaga klucza idempotentności po stronie API (TODO dla prawdziwego backendu).
 
 ---
 
@@ -447,8 +445,7 @@ Stan (a nie jednorazowe „zdarzenie” w `Channel`) sprawia, że nic nie ginie 
 | `NavigationStateTest` | flow nad zakładkami, podział syntetycznego stosu, `resetAll` |
 | `DeepLinkContractTest` | trasy linków budują klucze z typowanymi ID (`OrderDetailsNavKey(OrderId(1001))`) |
 | `SearchMatchingTest` | filtrowanie i sortowanie wyników dla `SearchCriteria` |
-| `SharedViewModelScopeTest` | kroki należą do zakresu najbliższego kroku 1 pod nimi; drugi formularz ma własny zakres; krok bez kroku 1 to błąd |
-| `SupportFormStateTest` | walidacja kroku 2, brak podwójnej wysyłki |
+| `SupportFormStateTest` | walidacja kroku 2, przejścia między krokami, brak podwójnej wysyłki |
 | ViewModel (do dopisania per feature) | `DetailsViewModel(DetailsNavKey(ItemId("7")), FakeItemsRepository())`, bez Androida |
 
 Na urządzeniu:
@@ -456,7 +453,7 @@ Na urządzeniu:
 - **Profil → Favourite item → wybór:** Profil pokazuje wybrany produkt; ponowne otwarcie pickera zaznacza go (argument `selected`).
 - **Śmierć procesu po wyborze:** wybór zostaje (`SavedStateHandle`).
 - **Wyszukiwanie:** Home → 🔍 → kryteria → wyniki; *wstecz* wraca do wypełnionego formularza; „More in …” w szczegółach otwiera wyniki od razu; link `adb shell am start -a android.intent.action.VIEW -d "myapp://search?category=books&sort=price_asc"`.
-- **Formularz:** wypełnij kroki 1 i 2, na kroku 3 wyjdź do ekranu głównego i zabij proces (`adb shell am kill <applicationId>`), wróć. Krok 3 powinien pokazać wszystkie dane; *Send* → numer zgłoszenia; ponowne otwarcie formularza startuje pusty.
+- **Formularz:** wypełnij kroki 1 i 2, na kroku 3 wyjdź do ekranu głównego i zabij proces (`adb shell am kill <applicationId>`), wróć. Krok 3 powinien pokazać wszystkie dane; *wstecz* wraca do kroku 2 z danymi; *Send* → numer zgłoszenia; ponowne otwarcie formularza startuje pusty.
 
 ---
 

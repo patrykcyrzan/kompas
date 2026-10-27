@@ -19,32 +19,44 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * ONE ViewModel for all three steps of the form (shared scope – see rememberSharedViewModelScope).
+ * The whole 3-step form on ONE screen (one back stack entry): the current step is part of the state,
+ * not of the back stack.
  *
- * - Created with the FIRST step's key, whichever step happens to create it (after process death it is
- *   the visible one).
- * - Input lives in SavedStateHandle; the shared scope saves it, so it survives process death on any step.
- * - Cleared when the form is left (back from step 1, close, or done).
+ * - Input and the step live in SavedStateHandle, so they survive process death on any step.
+ * - Cleared with the entry when the form is left (close, back from step 1, or done).
  */
 @HiltViewModel(assistedFactory = SupportViewModel.Factory::class)
 internal class SupportViewModel @AssistedInject constructor(
-    @Assisted first: SupportRequestNavKey,
+    @Assisted navKey: SupportRequestNavKey,
     private val savedStateHandle: SavedStateHandle,
     private val supportRepository: SupportRepository,
 ) : ViewModel() {
 
-    private val orderId: OrderId? = first.orderId
+    private val orderId: OrderId? = navKey.orderId
     private val sending = MutableStateFlow(false)
 
     val state: StateFlow<SupportFormState> = combine(
+        savedStateHandle.getStateFlow(KEY_STEP, SupportStep.Topic.name),
         savedStateHandle.getStateFlow(KEY_TOPIC, (if (orderId != null) SupportTopic.Order else SupportTopic.Other).name),
         savedStateHandle.getStateFlow(KEY_DESCRIPTION, ""),
         savedStateHandle.getStateFlow(KEY_EMAIL, ""),
-        savedStateHandle.getStateFlow<String?>(KEY_TICKET, null),
-        sending,
-    ) { topic, description, email, ticket, sending ->
-        SupportFormState(SupportTopic.valueOf(topic), orderId, description, email, sending, ticket)
+        combine(savedStateHandle.getStateFlow<String?>(KEY_TICKET, null), sending, ::Pair),
+    ) { step, topic, description, email, (ticket, sending) ->
+        SupportFormState(SupportStep.valueOf(step), SupportTopic.valueOf(topic), orderId, description, email, sending, ticket)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SupportFormState(orderId = orderId))
+
+    fun next() {
+        val form = state.value
+        if (form.canGoNext) savedStateHandle[KEY_STEP] = form.step.next().name
+    }
+
+    /** One step back. `false` on the first step – the screen leaves the form. */
+    fun previous(): Boolean {
+        val form = state.value
+        if (form.step == SupportStep.Topic || form.isSent) return false
+        savedStateHandle[KEY_STEP] = form.step.previous().name
+        return true
+    }
 
     fun onTopicChange(topic: SupportTopic) {
         savedStateHandle[KEY_TOPIC] = topic.name
@@ -74,10 +86,11 @@ internal class SupportViewModel @AssistedInject constructor(
 
     @AssistedFactory
     interface Factory {
-        fun create(first: SupportRequestNavKey): SupportViewModel
+        fun create(navKey: SupportRequestNavKey): SupportViewModel
     }
 
     private companion object {
+        const val KEY_STEP = "step"
         const val KEY_TOPIC = "topic"
         const val KEY_DESCRIPTION = "description"
         const val KEY_EMAIL = "email"
@@ -87,8 +100,19 @@ internal class SupportViewModel @AssistedInject constructor(
 
 internal enum class SupportTopic { Order, Payment, Account, Other }
 
+internal enum class SupportStep {
+    Topic, Details, Summary;
+
+    val number: Int get() = ordinal + 1
+
+    fun next(): SupportStep = entries.getOrElse(ordinal + 1) { this }
+
+    fun previous(): SupportStep = entries.getOrElse(ordinal - 1) { this }
+}
+
 /** The whole form; each step validates its own part. Pure – unit-tested. */
 internal data class SupportFormState(
+    val step: SupportStep = SupportStep.Topic,
     val topic: SupportTopic = SupportTopic.Other,
     val orderId: OrderId? = null,
     val description: String = "",
@@ -100,6 +124,13 @@ internal data class SupportFormState(
         get() = description.trim().length >= MIN_DESCRIPTION && EMAIL.matches(email)
 
     val isSent: Boolean get() = ticket != null
+
+    val canGoNext: Boolean
+        get() = when (step) {
+            SupportStep.Topic -> true
+            SupportStep.Details -> detailsValid
+            SupportStep.Summary -> false
+        }
 
     val canSubmit: Boolean get() = detailsValid && !sending && !isSent
 

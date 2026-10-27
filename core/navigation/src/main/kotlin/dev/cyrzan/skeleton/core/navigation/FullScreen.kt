@@ -6,7 +6,7 @@ package dev.cyrzan.skeleton.core.navigation
  *
  * ```
  * entry<LoginNavKey>(metadata = fullScreen()) { ... }
- * entry<FormStep1NavKey>(metadata = fullScreen() + sharedViewModelScope(FormStep1NavKey::class)) { ... }
+ * entry<CheckoutNavKey>(metadata = fullScreen() + otherMetadata) { ... }
  * ```
  *
  * Only the screen that opens the flow needs it – everything navigated to while a flow is open

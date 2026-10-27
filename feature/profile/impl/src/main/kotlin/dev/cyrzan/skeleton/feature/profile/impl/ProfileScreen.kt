@@ -76,7 +76,7 @@ internal fun ProfileScreen(
             ProfileRow("Favourite item", favourite?.let { "Item #$it" } ?: "None – pick one (returns a result)", onFavouriteClick)
             ProfileRow("My orders", "Switches to the Orders tab", onOrdersClick)
             ProfileRow("Settings", "Pushed on the Profile tab", onSettingsClick)
-            ProfileRow("Contact support", "3-step form with one shared ViewModel", onSupportClick)
+            ProfileRow("Contact support", "3-step form on one screen", onSupportClick)
             ProfileRow("About", "Pushed on the Profile tab", onAboutClick)
             if (isSignedIn) {
                 ProfileRow("Sign out", "Resets every tab", onSignOutClick)

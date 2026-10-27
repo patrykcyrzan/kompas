@@ -1,5 +1,6 @@
 package dev.cyrzan.skeleton.feature.support.impl
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -34,47 +35,71 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dev.cyrzan.skeleton.core.navigation.rememberSharedViewModelScope
 import dev.cyrzan.skeleton.feature.support.api.SupportRequestNavKey
 
-private const val STEPS = 3
+private val STEPS = SupportStep.entries.size
 
-/** The form's ViewModel – the same instance on every step. */
+/**
+ * The whole form is one screen: the steps are state of [SupportViewModel], so "back" moves between
+ * them here, and only leaves the screen from the first step.
+ */
 @Composable
-internal fun supportViewModel(): SupportViewModel {
-    val scope = rememberSharedViewModelScope<SupportRequestNavKey>()
-    return hiltViewModel<SupportViewModel, SupportViewModel.Factory>(scope.owner) { factory -> factory.create(scope.firstKey) }
+internal fun SupportRoute(
+    navKey: SupportRequestNavKey,
+    onClose: () -> Unit,
+    viewModel: SupportViewModel = hiltViewModel<SupportViewModel, SupportViewModel.Factory> { factory -> factory.create(navKey) },
+) {
+    val form by viewModel.state.collectAsStateWithLifecycle()
+    // Steps 2 and 3: back = previous step. After sending, back closes the form like "Done".
+    BackHandler(enabled = form.step != SupportStep.Topic) {
+        if (!viewModel.previous()) onClose()
+    }
+    when (form.step) {
+        SupportStep.Topic -> TopicStep(form, onTopicChange = viewModel::onTopicChange, onNext = viewModel::next, onClose = onClose)
+        SupportStep.Details -> DetailsStep(
+            form,
+            onDescriptionChange = viewModel::onDescriptionChange,
+            onEmailChange = viewModel::onEmailChange,
+            onNext = viewModel::next,
+            onBack = { viewModel.previous() },
+        )
+        SupportStep.Summary -> SummaryStep(form, onSubmit = viewModel::submit, onBack = { viewModel.previous() }, onDone = onClose)
+    }
 }
 
 @Composable
-internal fun SupportTopicRoute(onNext: () -> Unit, onClose: () -> Unit, viewModel: SupportViewModel = supportViewModel()) {
-    val form by viewModel.state.collectAsStateWithLifecycle()
-    SupportStep(step = 1, title = "What is it about?", onUp = onClose, upIsClose = true, action = "Next", actionEnabled = true, onAction = onNext) {
+private fun TopicStep(form: SupportFormState, onTopicChange: (SupportTopic) -> Unit, onNext: () -> Unit, onClose: () -> Unit) {
+    SupportStepScaffold(step = form.step, title = "What is it about?", onUp = onClose, upIsClose = true, action = "Next", actionEnabled = form.canGoNext, onAction = onNext) {
         form.orderId?.let { Text("About order #$it", style = MaterialTheme.typography.bodyLarge) }
         SupportTopic.entries.forEach { topic ->
             ListItem(
                 headlineContent = { Text(topic.name) },
                 leadingContent = { RadioButton(selected = form.topic == topic, onClick = null) },
-                modifier = Modifier.selectable(selected = form.topic == topic, onClick = { viewModel.onTopicChange(topic) }),
+                modifier = Modifier.selectable(selected = form.topic == topic, onClick = { onTopicChange(topic) }),
             )
         }
     }
 }
 
 @Composable
-internal fun SupportDetailsRoute(onNext: () -> Unit, onBack: () -> Unit, viewModel: SupportViewModel = supportViewModel()) {
-    val form by viewModel.state.collectAsStateWithLifecycle()
-    SupportStep(step = 2, title = "Describe the problem", onUp = onBack, action = "Next", actionEnabled = form.detailsValid, onAction = onNext) {
+private fun DetailsStep(
+    form: SupportFormState,
+    onDescriptionChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onNext: () -> Unit,
+    onBack: () -> Unit,
+) {
+    SupportStepScaffold(step = form.step, title = "Describe the problem", onUp = onBack, action = "Next", actionEnabled = form.canGoNext, onAction = onNext) {
         OutlinedTextField(
             value = form.description,
-            onValueChange = viewModel::onDescriptionChange,
+            onValueChange = onDescriptionChange,
             label = { Text("Description (min. ${SupportFormState.MIN_DESCRIPTION} characters)") },
             minLines = 4,
             modifier = Modifier.fillMaxWidth(),
         )
         OutlinedTextField(
             value = form.email,
-            onValueChange = viewModel::onEmailChange,
+            onValueChange = onEmailChange,
             label = { Text("E-mail for the reply") },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -84,18 +109,17 @@ internal fun SupportDetailsRoute(onNext: () -> Unit, onBack: () -> Unit, viewMod
 }
 
 @Composable
-internal fun SupportSummaryRoute(onDone: () -> Unit, onBack: () -> Unit, viewModel: SupportViewModel = supportViewModel()) {
-    val form by viewModel.state.collectAsStateWithLifecycle()
+private fun SummaryStep(form: SupportFormState, onSubmit: () -> Unit, onBack: () -> Unit, onDone: () -> Unit) {
     val ticket = form.ticket
-    SupportStep(
-        step = 3,
+    SupportStepScaffold(
+        step = form.step,
         title = if (ticket == null) "Check and send" else "Sent",
         onUp = if (ticket == null) onBack else onDone,
         upIsClose = ticket != null,
         action = if (ticket == null) "Send" else "Done",
         actionEnabled = if (ticket == null) form.canSubmit else true,
         busy = form.sending,
-        onAction = if (ticket == null) viewModel::submit else onDone,
+        onAction = if (ticket == null) onSubmit else onDone,
     ) {
         if (ticket != null) {
             Text("Thank you! Your ticket number is $ticket.", style = MaterialTheme.typography.titleMedium)
@@ -114,8 +138,8 @@ private fun SummaryRow(label: String, value: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SupportStep(
-    step: Int,
+private fun SupportStepScaffold(
+    step: SupportStep,
     title: String,
     onUp: () -> Unit,
     action: String,
@@ -129,7 +153,7 @@ private fun SupportStep(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text("Contact support · $step/$STEPS") },
+                    title = { Text("Contact support · ${step.number}/$STEPS") },
                     navigationIcon = {
                         IconButton(onClick = onUp) {
                             if (upIsClose) {
@@ -140,7 +164,7 @@ private fun SupportStep(
                         }
                     },
                 )
-                LinearProgressIndicator(progress = { step / STEPS.toFloat() }, modifier = Modifier.fillMaxWidth())
+                LinearProgressIndicator(progress = { step.number / STEPS.toFloat() }, modifier = Modifier.fillMaxWidth())
             }
         },
     ) { padding ->
