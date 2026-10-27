@@ -30,7 +30,7 @@ internal val DEEP_LINK_ORIGINS = listOf(
 /**
  * Where a screen opened from outside the app lives: walking up the parents must end at a tab root
  * (see TopLevelTab), which tells the navigator which tab to select – or at a full-screen screen
- * (see isFullScreen), which opens above the tabs.
+ * (declared fullScreen() on its entry), which opens above the tabs.
  *
  * Only used for links from outside the app. In-app navigation pushes on the current tab instead,
  * so e.g. item details opened from an order stay on the Orders tab.

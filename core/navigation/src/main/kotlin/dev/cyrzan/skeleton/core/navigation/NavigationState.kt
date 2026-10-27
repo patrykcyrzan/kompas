@@ -22,7 +22,8 @@ import androidx.navigation3.runtime.rememberNavBackStack
  * - The flow holds screens that take over the whole app (login, onboarding, checkout...). While a
  *   flow is open everything is pushed onto it – the user finishes or leaves the flow first.
  *
- * Which keys open a flow is the app's decision ([isFullScreen]); features only call [navigate].
+ * Which keys open a flow is decided by [isFullScreen] – in the app: the [fullScreen] metadata the
+ * feature put on its entry. Features only call [navigate].
  * Pure state, no UI – rendered by [AppNavDisplay], unit-testable without Android.
  */
 @Stable

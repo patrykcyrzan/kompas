@@ -89,15 +89,15 @@ AppNavDisplay  (core:navigation, Compose)        ← rysuje stan przez Nav3 NavD
 | `AppNavDisplay` | `core:navigation` | Nav3: dekoratory per stos, jeden `NavDisplay`, pasek ukrywany przy flow, insety. |
 | `AppNavigator` | `app` | Implementacja `Navigator`; linki InApp/External → `NavigationState`. |
 | `TopLevelTab` | `app` | Lista zakładek (korzeń, etykieta, ikona) w kolejności wyświetlania. |
-| `isFullScreen(key)` | `app` (`Presentation.kt`) | Które klucze otwierają flow. |
+| `fullScreen()` | `core:navigation`, używane w `impl` feature'a | Metadane wpisu: ekran otwiera flow nad zakładkami. |
 | `parentOf(destination)` | `app` (`DeepLinkConfig.kt`) | Hierarchia ekranów – do której zakładki należy ekran otwarty z linku z zewnątrz. |
 | `SkeletonNavHost` | `app` | Skleja wszystko: stan, navigator, linki, reset po wylogowaniu, pasek zakładek. |
 | `AppLock`, `LockScreen` | `app` (`lock/`) | Blokada po powrocie z tła. |
 
 Dlaczego tak:
 
-- **`core:navigation` nie zna żadnego feature'a ani zakładek konkretnej aplikacji** – dostaje listę korzeni i funkcję `isFullScreen`. Można go przenieść do innego projektu bez zmian.
-- **`app` tylko opisuje** strukturę (zakładki, co jest pełnoekranowe, hierarchię dla linków). Nie dotyka dekoratorów, `NavDisplay` ani list wpisów.
+- **`core:navigation` nie zna żadnego feature'a ani zakładek konkretnej aplikacji** – dostaje listę korzeni i funkcję `isFullScreen` (w aplikacji: odczyt metadanych wpisu). Można go przenieść do innego projektu bez zmian.
+- **`app` tylko opisuje** strukturę (zakładki, hierarchię dla linków). To, że ekran jest pełnoekranowy, deklaruje feature, który go posiada. Nie dotyka dekoratorów, `NavDisplay` ani list wpisów.
 - **Feature'y znają tylko `Navigator` i klucze z modułów `api`.**
 
 ---
@@ -184,14 +184,23 @@ Test kontraktu pilnuje, żeby każda hierarchia kończyła się na korzeniu zak�
 
 **Kiedy coś powinno być flow, a nie ekranem w zakładce?** Gdy jest *zadaniem*, którego użytkownik nie powinien porzucić w połowie przez kliknięcie innej zakładki: logowanie, onboarding, checkout, aparat, kreator, edytor.
 
-Decyzja jest w aplikacji, nie w feature'rze:
+Deklaruje to feature, który jest właścicielem ekranu, metadanymi wpisu w swoim module `impl`:
 
 ```kotlin
-// app/navigation/Presentation.kt
-internal fun isFullScreen(key: NavKey): Boolean = key is LoginNavKey
+// feature/auth/impl
+entry<LoginNavKey>(metadata = fullScreen()) { ... }
 ```
 
-Feature po prostu woła `navigator.navigate(LoginNavKey)`.
+Każdy inny feature po prostu woła `navigator.navigate(LoginNavKey)`. Nie wie, jak ten ekran zostanie pokazany.
+
+Dlaczego metadane, a nie lista kluczy w `app` ani interfejs na kluczu:
+
+- **Tak to wygląda w Nav3.** Metadane wpisu opisują, *jak* go wyświetlić (przejścia, dialog, list-detail). „Otwórz nad zakładkami” to ta sama kategoria.
+- **Dodanie feature'a nie wymaga zmian w `app`.** Przy liście w `app` łatwo zapomnieć dopisać klucz. Nic się wtedy nie wysypie, ekran po prostu otworzy się pod zakładkami, z paskiem.
+- **Klucz w `api` zostaje czystym kontraktem** (argumenty, link, `RequiresAuthentication`). Sposób prezentacji zna tylko `impl`.
+- **`app` dalej decyduje o powłoce.** Metadane wyrażają intencję, a co z nią zrobić (np. inaczej na tablecie), rozstrzyga `NavigationState` lub `AppNavDisplay`.
+
+Oznacza się tylko ekran, który *otwiera* flow. Kolejne kroki i tak trafiają na otwarty flow. Wyjątek: link z zewnątrz, który od razu prowadzi do dalszego kroku. Wtedy ten krok też potrzebuje `fullScreen()`, bo stos syntetyczny dzieli się na pierwszym kluczu pełnoekranowym.
 
 Reguły flow:
 
@@ -234,12 +243,17 @@ myapp://orders/1001 (wylogowany)
 `SkeletonNavHost` w `app` sprowadza się do opisu:
 
 ```kotlin
-val state = rememberNavigationState(TopLevelTab.roots, startBackStack, ::isFullScreen)
-val navigator = remember(state, deepLinkDispatcher) { AppNavigator(state, deepLinkDispatcher) }
+val navigator = remember(deepLinkDispatcher) { AppNavigator(deepLinkDispatcher) }
+val entries = remember(entryProviderInstallers, navigator) {
+    entryProvider { entryProviderInstallers.forEach { with(it) { install(navigator) } } }
+}
+// Each feature declares on its own entries which screens open a flow above the tabs.
+val state = rememberNavigationState(TopLevelTab.roots, startBackStack) { key -> entries(key).metadata.isFullScreen() }
+navigator.state = state
 
 AppNavDisplay(
     state = state,
-    entryProvider = entryProvider { entryProviderInstallers.forEach { with(it) { install(navigator) } } },
+    entryProvider = entries,
     bottomBar = {
         NavigationBar {
             TopLevelTab.entries.forEach { tab ->
@@ -255,6 +269,8 @@ AppNavDisplay(
     onBack = { navigator.goBack() },
 )
 ```
+
+Kolejność wynika z zależności. Wpisy potrzebują nawigatora (callbacki ekranów), a stan potrzebuje wpisów (czy klucz ma `fullScreen()`, także przy podziale stosu startowego). Dlatego najpierw tworzony jest nawigator, potem wpisy, potem stan, który od razu podpina się do nawigatora. Żaden ekran nie zdąży wywołać nawigatora wcześniej, bo callbacki działają dopiero po kompozycji.
 
 Co `AppNavDisplay` robi pod spodem:
 
@@ -365,11 +381,13 @@ PIN w prawdziwej aplikacji: nigdy jawnie – hash z solą (klucz w Keystore) alb
 
 ### 11.2 Ekran pełnoekranowy (flow)
 
-Jak wyżej, plus w `app/navigation/Presentation.kt`:
+Jak wyżej, tylko pierwszy ekran zadania dostaje metadane:
 
 ```kotlin
-internal fun isFullScreen(key: NavKey): Boolean = key is LoginNavKey || key is CheckoutNavKey
+entry<CheckoutNavKey>(metadata = fullScreen()) { ... }
 ```
+
+W `app` nic się nie zmienia.
 
 Na końcu zadania feature woła `navigator.closeFlow()`. Dla linku z zewnątrz: `parentOf(Checkout) = null` otworzy go nad bieżącą zakładką, a `parentOf(Checkout) = CartNavKey` – nad zakładką koszyka.
 

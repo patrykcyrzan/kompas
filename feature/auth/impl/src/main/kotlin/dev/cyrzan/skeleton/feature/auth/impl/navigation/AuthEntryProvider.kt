@@ -9,6 +9,7 @@ import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
+import dev.cyrzan.skeleton.core.navigation.fullScreen
 import dev.cyrzan.skeleton.feature.auth.api.LoginNavKey
 import dev.cyrzan.skeleton.feature.auth.impl.LoginRoute
 import javax.inject.Inject
@@ -16,7 +17,7 @@ import javax.inject.Inject
 internal class AuthEntryProvider @Inject constructor() : EntryProviderInstaller {
 
     override fun EntryProviderScope<NavKey>.install(navigator: Navigator) {
-        entry<LoginNavKey> {
+        entry<LoginNavKey>(metadata = fullScreen()) {
             LoginRoute(
                 onSignedIn = {
                     // Leave the sign-in flow first, then open the link that needed a session (if any).

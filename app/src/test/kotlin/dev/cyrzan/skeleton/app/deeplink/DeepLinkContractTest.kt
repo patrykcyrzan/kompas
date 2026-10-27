@@ -1,7 +1,6 @@
 package dev.cyrzan.skeleton.app.deeplink
 
 import dev.cyrzan.skeleton.app.navigation.TopLevelTab
-import dev.cyrzan.skeleton.app.navigation.isFullScreen
 import dev.cyrzan.skeleton.core.deeplink.AuthenticationGuard
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkResult
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkSource
@@ -79,14 +78,13 @@ class DeepLinkContractTest {
     }
 
     @Test
-    fun `order details need a session - sign-in opens above the tabs and resumes the link`() {
+    fun `order details need a session - redirect to sign-in that resumes the link`() {
         val guarded = createDeepLinkResolver(routes, guards = listOf(AuthenticationGuard({ false }, LoginNavKey)))
 
         assertEquals(
             DeepLinkResult.Redirect(LoginNavKey, listOf(LoginNavKey), resumable = true),
             guarded.resolve("kompas://orders/1001", DeepLinkSource.External),
         )
-        assertTrue(isFullScreen(LoginNavKey))
     }
 
     @Test

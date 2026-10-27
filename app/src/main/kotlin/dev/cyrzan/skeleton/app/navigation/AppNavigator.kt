@@ -11,12 +11,18 @@ import dev.cyrzan.skeleton.core.navigation.NavigationState
 import dev.cyrzan.skeleton.core.navigation.Navigator
 import dev.cyrzan.skeleton.core.navigation.OpenLinkResult
 
-/** The [Navigator] features get: [NavigationState] operations + links, all going through the deep link pipeline. */
+/**
+ * The [Navigator] features get: [NavigationState] operations + links, all going through the deep link pipeline.
+ *
+ * Created before the [state] it drives: the state asks the entries (built with this navigator) which
+ * screens are full screen. [state] is attached in the same composition, before any screen can call it.
+ */
 @Stable
 internal class AppNavigator(
-    private val state: NavigationState,
     private val deepLinks: DeepLinkDispatcher,
 ) : Navigator {
+
+    lateinit var state: NavigationState
 
     override fun navigate(key: NavKey) = state.navigate(key)
 

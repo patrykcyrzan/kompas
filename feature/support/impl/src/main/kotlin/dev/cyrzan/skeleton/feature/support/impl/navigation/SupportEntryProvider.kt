@@ -9,6 +9,7 @@ import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
+import dev.cyrzan.skeleton.core.navigation.fullScreen
 import dev.cyrzan.skeleton.core.navigation.sharedViewModelScope
 import dev.cyrzan.skeleton.feature.support.api.SupportRequestNavKey
 import dev.cyrzan.skeleton.feature.support.impl.SupportDetailsRoute
@@ -30,7 +31,8 @@ internal class SupportEntryProvider @Inject constructor() : EntryProviderInstall
         // Every step shares ViewModels with the first one.
         val form = sharedViewModelScope(SupportRequestNavKey::class)
 
-        entry<SupportRequestNavKey>(metadata = form) {
+        // The first step opens the form above the tabs; steps 2 and 3 stay in that flow.
+        entry<SupportRequestNavKey>(metadata = fullScreen() + form) {
             SupportTopicRoute(
                 onNext = { navigator.navigate(SupportDetailsNavKey) },
                 onClose = { navigator.closeFlow() },

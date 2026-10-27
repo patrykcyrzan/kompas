@@ -350,7 +350,7 @@ Trzeba jednak pamiętać o kosztach:
 
 // Entry provider: każdy krok (także pierwszy) deklaruje wspólny zakres
 val form = sharedViewModelScope(SupportRequestNavKey::class)
-entry<SupportRequestNavKey>(metadata = form) { SupportTopicRoute(onNext = { navigator.navigate(SupportDetailsNavKey) }, onClose = { navigator.closeFlow() }) }
+entry<SupportRequestNavKey>(metadata = fullScreen() + form) { SupportTopicRoute(onNext = { navigator.navigate(SupportDetailsNavKey) }, onClose = { navigator.closeFlow() }) }
 entry<SupportDetailsNavKey>(metadata = form) { SupportDetailsRoute(onNext = { navigator.navigate(SupportSummaryNavKey) }, onBack = { navigator.goBack() }) }
 entry<SupportSummaryNavKey>(metadata = form) { SupportSummaryRoute(onDone = { navigator.closeFlow() }, onBack = { navigator.goBack() }) }
 
