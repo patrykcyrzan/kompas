@@ -16,8 +16,8 @@ import dev.cyrzan.skeleton.core.navigation.ResultKey
 /**
  * The [Navigator] features get: [NavigationState] operations + links, all going through the deep link pipeline.
  *
- * Created before the [state] it drives: the state asks the entries (built with this navigator) which
- * screens are full screen. [state] is attached in the same composition, before any screen can call it.
+ * Created before the state it drives (the state asks the entries, built with this navigator, which
+ * screens are full screen) – see [rememberAppNavigation], the only place that creates and attaches it.
  */
 @Stable
 internal class AppNavigator(
@@ -25,7 +25,14 @@ internal class AppNavigator(
     private val results: ResultEventBus,
 ) : Navigator {
 
-    lateinit var state: NavigationState
+    private var attached: NavigationState? = null
+
+    private val state: NavigationState
+        get() = checkNotNull(attached) { "Navigator used before the navigation state was attached (see rememberAppNavigation)" }
+
+    fun attach(state: NavigationState) {
+        attached = state
+    }
 
     override fun navigate(key: NavKey) = state.navigate(key)
 

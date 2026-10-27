@@ -6,16 +6,11 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.entryProvider
 import dev.cyrzan.skeleton.app.deeplink.DeepLinkDispatcher
 import dev.cyrzan.skeleton.core.navigation.AppNavDisplay
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
-import dev.cyrzan.skeleton.core.navigation.isFullScreen
-import dev.cyrzan.skeleton.core.navigation.rememberAppResultEventBus
-import dev.cyrzan.skeleton.core.navigation.rememberNavigationState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
@@ -30,18 +25,9 @@ internal fun SkeletonNavHost(
     isSignedIn: StateFlow<Boolean>,
     modifier: Modifier = Modifier,
 ) {
-    val resultEventBus = rememberAppResultEventBus()
-    val navigator = remember(deepLinkDispatcher, resultEventBus) { AppNavigator(deepLinkDispatcher, resultEventBus) }
-    val entries = remember(entryProviderInstallers, navigator) {
-        entryProvider {
-            entryProviderInstallers.forEach { installer ->
-                with(installer) { install(navigator) }
-            }
-        }
-    }
-    // Each feature declares on its own entries which screens open a flow above the tabs.
-    val state = rememberNavigationState(TopLevelTab.roots, startBackStack) { key -> entries(key).metadata.isFullScreen() }
-    navigator.state = state
+    val navigation = rememberAppNavigation(entryProviderInstallers, deepLinkDispatcher, startBackStack)
+    val state = navigation.state
+    val navigator = navigation.navigator
 
     LaunchedEffect(navigator, externalLinks) {
         externalLinks.collect(navigator::openExternalLink)
@@ -54,7 +40,7 @@ internal fun SkeletonNavHost(
 
     AppNavDisplay(
         state = state,
-        entryProvider = entries,
+        entryProvider = navigation.entryProvider,
         bottomBar = {
             NavigationBar {
                 TopLevelTab.entries.forEach { tab ->
@@ -68,7 +54,7 @@ internal fun SkeletonNavHost(
             }
         },
         modifier = modifier,
-        resultEventBus = resultEventBus,
+        resultEventBus = navigation.resultEventBus,
         onBack = { navigator.goBack() },
     )
 }

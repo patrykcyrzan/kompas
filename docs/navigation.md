@@ -91,7 +91,8 @@ AppNavDisplay  (core:navigation, Compose)        ← rysuje stan przez Nav3 NavD
 | `TopLevelTab` | `app` | Lista zakładek (korzeń, etykieta, ikona) w kolejności wyświetlania. |
 | `fullScreen()` | `core:navigation`, używane w `impl` feature'a | Metadane wpisu: ekran otwiera flow nad zakładkami. |
 | `parentOf(destination)` | `app` (`DeepLinkConfig.kt`) | Hierarchia ekranów – do której zakładki należy ekran otwarty z linku z zewnątrz. |
-| `SkeletonNavHost` | `app` | Skleja wszystko: stan, navigator, linki, reset po wylogowaniu, pasek zakładek. |
+| `rememberAppNavigation` | `app` | Tworzy nawigator, wpisy i stan w jedynej poprawnej kolejności. |
+| `SkeletonNavHost` | `app` | Skleja wszystko: nawigacja, linki, reset po wylogowaniu, pasek zakładek. |
 | `AppLock`, `LockScreen` | `app` (`lock/`) | Blokada po powrocie z tła. |
 
 Dlaczego tak:
@@ -243,17 +244,13 @@ myapp://orders/1001 (wylogowany)
 `SkeletonNavHost` w `app` sprowadza się do opisu:
 
 ```kotlin
-val navigator = remember(deepLinkDispatcher) { AppNavigator(deepLinkDispatcher) }
-val entries = remember(entryProviderInstallers, navigator) {
-    entryProvider { entryProviderInstallers.forEach { with(it) { install(navigator) } } }
-}
-// Each feature declares on its own entries which screens open a flow above the tabs.
-val state = rememberNavigationState(TopLevelTab.roots, startBackStack) { key -> entries(key).metadata.isFullScreen() }
-navigator.state = state
+val navigation = rememberAppNavigation(entryProviderInstallers, deepLinkDispatcher, startBackStack)
+val state = navigation.state
+val navigator = navigation.navigator
 
 AppNavDisplay(
     state = state,
-    entryProvider = entries,
+    entryProvider = navigation.entryProvider,
     bottomBar = {
         NavigationBar {
             TopLevelTab.entries.forEach { tab ->
@@ -266,11 +263,19 @@ AppNavDisplay(
             }
         }
     },
+    resultEventBus = navigation.resultEventBus,
     onBack = { navigator.goBack() },
 )
 ```
 
-Kolejność wynika z zależności. Wpisy potrzebują nawigatora (callbacki ekranów), a stan potrzebuje wpisów (czy klucz ma `fullScreen()`, także przy podziale stosu startowego). Dlatego najpierw tworzony jest nawigator, potem wpisy, potem stan, który od razu podpina się do nawigatora. Żaden ekran nie zdąży wywołać nawigatora wcześniej, bo callbacki działają dopiero po kompozycji.
+`rememberAppNavigation` (`app/navigation/AppNavigation.kt`) tworzy wszystko w jedynej kolejności, która działa:
+
+1. **nawigator**: feature'y zapamiętują go we wpisach, ale wywołują dopiero w callbackach;
+2. **wpisy**, zbudowane z tym nawigatorem;
+3. **stan**, który pyta wpisy, czy klucz ma `fullScreen()` (także przy podziale stosu startowego);
+4. **podpięcie stanu do nawigatora** (`attach`), zanim jakikolwiek ekran może go wywołać.
+
+Cykl jest tylko między referencjami do obiektów: nawigator musi *istnieć* przed wpisami, ale *działać* zaczyna dopiero po kompozycji. Kolejność jest zamknięta w jednej funkcji, więc nie da się jej przestawić. Stan jest prywatny w `AppNavigator`, a użycie nawigatora przed podpięciem kończy się czytelnym błędem (sprawdza to `AppNavigatorTest`).
 
 Co `AppNavDisplay` robi pod spodem:
 
