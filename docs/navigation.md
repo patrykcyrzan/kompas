@@ -4,6 +4,7 @@ Ten dokument opisuje, **jak zbudowana jest nawigacja w aplikacji z dolnymi zakł
 
 Deeplinki (parser, guardy, polityka back stacku) mają osobny dokument: [deeplinks.md](deeplinks.md).
 Przekazywanie argumentów, typowane ID i zwracanie wyników między ekranami: [navigation-arguments.md](navigation-arguments.md).
+Zwięzła specyfikacja do odtworzenia tej nawigacji w innym projekcie (API, reguły, podjęte decyzje): [navigation-spec.md](navigation-spec.md).
 
 ---
 
