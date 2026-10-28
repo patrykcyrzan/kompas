@@ -2,6 +2,7 @@ package dev.cyrzan.skeleton.app.navigation
 
 import androidx.compose.runtime.Stable
 import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.result.ResultEventBus
 import dev.cyrzan.skeleton.app.deeplink.DeepLinkDispatcher
 import dev.cyrzan.skeleton.app.deeplink.toNavKey
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkResult
@@ -10,17 +11,37 @@ import dev.cyrzan.skeleton.core.deeplink.Destination
 import dev.cyrzan.skeleton.core.navigation.NavigationState
 import dev.cyrzan.skeleton.core.navigation.Navigator
 import dev.cyrzan.skeleton.core.navigation.OpenLinkResult
+import dev.cyrzan.skeleton.core.navigation.ResultKey
 
-/** The [Navigator] features get: [NavigationState] operations + links, all going through the deep link pipeline. */
+/**
+ * The [Navigator] features get: [NavigationState] operations + links, all going through the deep link pipeline.
+ *
+ * Created before the state it drives (the state asks the entries, built with this navigator, which
+ * screens are full screen) – see [rememberAppNavigation], the only place that creates and attaches it.
+ */
 @Stable
 internal class AppNavigator(
-    private val state: NavigationState,
     private val deepLinks: DeepLinkDispatcher,
+    private val results: ResultEventBus,
 ) : Navigator {
+
+    private var attached: NavigationState? = null
+
+    private val state: NavigationState
+        get() = checkNotNull(attached) { "Navigator used before the navigation state was attached (see rememberAppNavigation)" }
+
+    fun attach(state: NavigationState) {
+        attached = state
+    }
 
     override fun navigate(key: NavKey) = state.navigate(key)
 
     override fun goBack(): Boolean = state.goBack()
+
+    override fun <T : Any> goBackWithResult(key: ResultKey<T>, result: T) {
+        results.sendResult(key.name, result)
+        state.goBack()
+    }
 
     override fun closeFlow() = state.closeFlow()
 

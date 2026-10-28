@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.cyrzan.skeleton.core.model.ItemId
 import dev.cyrzan.skeleton.core.model.Order
 import dev.cyrzan.skeleton.feature.orders.api.OrderDetailsNavKey
 
@@ -39,7 +40,7 @@ internal fun OrdersRoute(
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         } else {
             LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-                items(list, key = Order::id) { order ->
+                items(list, key = { it.id.value }) { order ->
                     ListItem(
                         headlineContent = { Text(order.title) },
                         supportingContent = { Text("${order.status} · ${order.itemIds.size} item(s)") },
@@ -56,7 +57,8 @@ internal fun OrdersRoute(
 @Composable
 internal fun OrderDetailsRoute(
     navKey: OrderDetailsNavKey,
-    onItemClick: (itemId: String) -> Unit,
+    onItemClick: (itemId: ItemId) -> Unit,
+    onReportProblemClick: () -> Unit,
     onBackClick: () -> Unit,
     viewModel: OrderDetailsViewModel = hiltViewModel<OrderDetailsViewModel, OrderDetailsViewModel.Factory>(
         creationCallback = { factory -> factory.create(navKey) },
@@ -91,6 +93,13 @@ internal fun OrderDetailsRoute(
                         modifier = Modifier.clickable { onItemClick(itemId) },
                     )
                     HorizontalDivider()
+                }
+                item {
+                    ListItem(
+                        headlineContent = { Text("Report a problem") },
+                        supportingContent = { Text("3-step form, prefilled with this order") },
+                        modifier = Modifier.clickable(onClick = onReportProblemClick),
+                    )
                 }
             }
         }

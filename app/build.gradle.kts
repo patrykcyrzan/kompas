@@ -39,6 +39,8 @@ dependencies {
     implementation(projects.feature.orders.api)
     implementation(projects.feature.profile.api)
     implementation(projects.feature.auth.api)
+    implementation(projects.feature.search.api)
+    implementation(projects.feature.support.api)
 
     // impl modules are wired in purely through Hilt multibindings (Set<EntryProviderInstaller>).
     implementation(projects.feature.home.impl)
@@ -47,6 +49,8 @@ dependencies {
     implementation(projects.feature.orders.impl)
     implementation(projects.feature.profile.impl)
     implementation(projects.feature.auth.impl)
+    implementation(projects.feature.search.impl)
+    implementation(projects.feature.support.impl)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

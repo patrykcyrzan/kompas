@@ -8,10 +8,10 @@ dependencies {
     api(libs.androidx.navigation3.runtime)
     api(libs.kotlinx.serialization.core)
 
-    // AppNavDisplay: the Nav3 UI wiring (decorators, NavDisplay) lives here so `:app` only describes its tabs.
+    // NavigationDisplay: the Nav3 wiring (decorators, entry identity, NavDisplay). The shell around it is in `:app`.
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
-    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     testImplementation(libs.junit)
 }

@@ -14,6 +14,7 @@ import dev.cyrzan.skeleton.core.navigation.OpenLinkResult
 import dev.cyrzan.skeleton.feature.details.api.DetailsNavKey
 import dev.cyrzan.skeleton.feature.home.api.HomeNavKey
 import dev.cyrzan.skeleton.feature.home.impl.HomeRoute
+import dev.cyrzan.skeleton.feature.search.api.SearchNavKey
 import dev.cyrzan.skeleton.feature.settings.api.SettingsNavKey
 import javax.inject.Inject
 
@@ -33,6 +34,7 @@ internal class HomeEntryProvider @Inject constructor() : EntryProviderInstaller 
                         uriHandler.openUri(promo.link)
                     }
                 },
+                onSearchClick = { navigator.navigate(SearchNavKey()) },
                 onSettingsClick = { navigator.navigate(SettingsNavKey) },
             )
         }

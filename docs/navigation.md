@@ -3,6 +3,8 @@
 Ten dokument opisuje, **jak zbudowana jest nawigacja w aplikacji z dolnymi zakładkami**: jaki jest model stanu, jak zachowuje się przy każdej akcji użytkownika, jak jest opakowany Navigation 3, gdzie lądują ekrany otwierane z linków, czym są przepływy pełnoekranowe i jak działa blokada PIN po powrocie z tła.
 
 Deeplinki (parser, guardy, polityka back stacku) mają osobny dokument: [deeplinks.md](deeplinks.md).
+Przekazywanie argumentów, typowane ID i zwracanie wyników między ekranami: [navigation-arguments.md](navigation-arguments.md).
+Zwięzła specyfikacja do odtworzenia tej nawigacji w innym projekcie (API, reguły, podjęte decyzje): [navigation-spec.md](navigation-spec.md).
 
 ---
 
@@ -14,7 +16,7 @@ Deeplinki (parser, guardy, polityka back stacku) mają osobny dokument: [deeplin
 4. [Zachowanie – akcja po akcji](#4-zachowanie--akcja-po-akcji)
 5. [Gdzie ląduje nowy ekran](#5-gdzie-ląduje-nowy-ekran)
 6. [Przepływy pełnoekranowe (flow)](#6-przepływy-pełnoekranowe-flow)
-7. [Opakowanie Navigation 3 – `AppNavDisplay`](#7-opakowanie-navigation-3--appnavdisplay)
+7. [Opakowanie Navigation 3 – `NavigationDisplay` i `AppShell`](#7-opakowanie-navigation-3--navigationdisplay-i-appshell)
 8. [Zapis stanu](#8-zapis-stanu)
 9. [Sesja i wylogowanie](#9-sesja-i-wylogowanie)
 10. [Blokada aplikacji (PIN / biometria)](#10-blokada-aplikacji-pin--biometria)
@@ -75,7 +77,9 @@ NavigationState  (core:navigation, czysty stan)  ← zakładki + flow, reguły �
    │      └── BackStackNavigator × N             ← operacje na jednym NavBackStack
    └── flow: NavBackStack
    ▼
-AppNavDisplay  (core:navigation, Compose)        ← rysuje stan przez Nav3 NavDisplay + pasek
+NavigationDisplay  (core:navigation, Compose)    ← rysuje stan przez Nav3 NavDisplay
+   ▼
+AppShell  (app, Compose)                         ← układ aplikacji: ekrany + pasek zakładek
 ```
 
 | Klasa / plik | Moduł | Odpowiedzialność |
@@ -85,18 +89,22 @@ AppNavDisplay  (core:navigation, Compose)        ← rysuje stan przez Nav3 NavD
 | `TabbedBackStack` | `core:navigation` | Stos per zakładka + indeks wybranej. `selectTab`, `navigate`, `goBack`, `resetTo`, `resetAll`. |
 | `NavigationState` | `core:navigation` | Zakładki + flow. Reguły z [rozdziału 5](#5-gdzie-ląduje-nowy-ekran). Czysty stan, bez UI. |
 | `rememberNavigationState` | `core:navigation` | Tworzy i zapisuje stan (rotacja, śmierć procesu). |
-| `AppNavDisplay` | `core:navigation` | Nav3: dekoratory per stos, jeden `NavDisplay`, pasek ukrywany przy flow, insety. |
+| `NavigationDisplay` | `core:navigation` | Nav3: dekoratory per stos, tożsamość wpisów, jeden `NavDisplay`, szyna wyników. Bez layoutu. |
+| `AppShell` | `app` | Układ aplikacji: `NavigationDisplay` + pasek zakładek ukrywany przy flow, insety. |
 | `AppNavigator` | `app` | Implementacja `Navigator`; linki InApp/External → `NavigationState`. |
 | `TopLevelTab` | `app` | Lista zakładek (korzeń, etykieta, ikona) w kolejności wyświetlania. |
-| `isFullScreen(key)` | `app` (`Presentation.kt`) | Które klucze otwierają flow. |
+| `fullScreen()` | `core:navigation`, używane w `impl` feature'a | Metadane wpisu: ekran otwiera flow nad zakładkami. |
 | `parentOf(destination)` | `app` (`DeepLinkConfig.kt`) | Hierarchia ekranów – do której zakładki należy ekran otwarty z linku z zewnątrz. |
-| `SkeletonNavHost` | `app` | Skleja wszystko: stan, navigator, linki, reset po wylogowaniu, pasek zakładek. |
+| `rememberAppNavigation` | `app` | Tworzy nawigator, wpisy i stan w jedynej poprawnej kolejności. |
+
+Feature'y używają tylko `Navigator`, `fullScreen()`, `ResultKey` / `ResultEffect` i `EntryProviderInstaller`. `NavigationState`, `TabbedBackStack`, `BackStackNavigator` i `NavigationDisplay` są publiczne, bo potrzebuje ich `app`, ale feature ich nie importuje – inaczej omija reguły z `Navigator` (flow, linki, sesja).
+| `SkeletonNavHost` | `app` | Skleja wszystko: nawigacja, linki, reset po wylogowaniu, pasek zakładek. |
 | `AppLock`, `LockScreen` | `app` (`lock/`) | Blokada po powrocie z tła. |
 
 Dlaczego tak:
 
-- **`core:navigation` nie zna żadnego feature'a ani zakładek konkretnej aplikacji** – dostaje listę korzeni i funkcję `isFullScreen`. Można go przenieść do innego projektu bez zmian.
-- **`app` tylko opisuje** strukturę (zakładki, co jest pełnoekranowe, hierarchię dla linków). Nie dotyka dekoratorów, `NavDisplay` ani list wpisów.
+- **`core:navigation` nie zna żadnego feature'a ani zakładek konkretnej aplikacji** – dostaje listę korzeni i funkcję `isFullScreen` (w aplikacji: odczyt metadanych wpisu). Można go przenieść do innego projektu bez zmian.
+- **`app` tylko opisuje** strukturę (zakładki, hierarchię dla linków). To, że ekran jest pełnoekranowy, deklaruje feature, który go posiada. Nie dotyka dekoratorów, `NavDisplay` ani list wpisów.
 - **Feature'y znają tylko `Navigator` i klucze z modułów `api`.**
 
 ---
@@ -183,14 +191,23 @@ Test kontraktu pilnuje, żeby każda hierarchia kończyła się na korzeniu zak�
 
 **Kiedy coś powinno być flow, a nie ekranem w zakładce?** Gdy jest *zadaniem*, którego użytkownik nie powinien porzucić w połowie przez kliknięcie innej zakładki: logowanie, onboarding, checkout, aparat, kreator, edytor.
 
-Decyzja jest w aplikacji, nie w feature'rze:
+Deklaruje to feature, który jest właścicielem ekranu, metadanymi wpisu w swoim module `impl`:
 
 ```kotlin
-// app/navigation/Presentation.kt
-internal fun isFullScreen(key: NavKey): Boolean = key is LoginNavKey
+// feature/auth/impl
+entry<LoginNavKey>(metadata = fullScreen()) { ... }
 ```
 
-Feature po prostu woła `navigator.navigate(LoginNavKey)`.
+Każdy inny feature po prostu woła `navigator.navigate(LoginNavKey)`. Nie wie, jak ten ekran zostanie pokazany.
+
+Dlaczego metadane, a nie lista kluczy w `app` ani interfejs na kluczu:
+
+- **Tak to wygląda w Nav3.** Metadane wpisu opisują, *jak* go wyświetlić (przejścia, dialog, list-detail). „Otwórz nad zakładkami” to ta sama kategoria.
+- **Dodanie feature'a nie wymaga zmian w `app`.** Przy liście w `app` łatwo zapomnieć dopisać klucz. Nic się wtedy nie wysypie, ekran po prostu otworzy się pod zakładkami, z paskiem.
+- **Klucz w `api` zostaje czystym kontraktem** (argumenty, link, `RequiresAuthentication`). Sposób prezentacji zna tylko `impl`.
+- **`app` dalej decyduje o powłoce.** Metadane wyrażają intencję, a co z nią zrobić (np. inaczej na tablecie), rozstrzyga `NavigationState` lub `AppShell`.
+
+Oznacza się tylko ekran, który *otwiera* flow. Kolejne kroki i tak trafiają na otwarty flow. Wyjątek: link z zewnątrz, który od razu prowadzi do dalszego kroku. Wtedy ten krok też potrzebuje `fullScreen()`, bo stos syntetyczny dzieli się na pierwszym kluczu pełnoekranowym.
 
 Reguły flow:
 
@@ -228,37 +245,50 @@ myapp://orders/1001 (wylogowany)
 
 ---
 
-## 7. Opakowanie Navigation 3 – `AppNavDisplay`
+## 7. Opakowanie Navigation 3 – `NavigationDisplay` i `AppShell`
 
-`SkeletonNavHost` w `app` sprowadza się do opisu:
+Renderowanie ma dwie warstwy:
+
+- **`NavigationDisplay`** (`core:navigation`) – mechanika Nav3: które wpisy pokazać, dekoratory, tożsamość wpisów, szyna wyników. Nie wie nic o pasku ani o układzie ekranu.
+- **`AppShell`** (`app/navigation/AppShell.kt`) – wygląd tej konkretnej aplikacji: ekrany nad paskiem zakładek, pasek ukrywany przy flow, insety. Tablet z railem, pasek chowany przy scrollu czy FAB nad paskiem to zmiany tylko tutaj.
+
+`SkeletonNavHost` w `app` sprowadza się do:
 
 ```kotlin
-val state = rememberNavigationState(TopLevelTab.roots, startBackStack, ::isFullScreen)
-val navigator = remember(state, deepLinkDispatcher) { AppNavigator(state, deepLinkDispatcher) }
-
-AppNavDisplay(
-    state = state,
-    entryProvider = entryProvider { entryProviderInstallers.forEach { with(it) { install(navigator) } } },
-    bottomBar = {
-        NavigationBar {
-            TopLevelTab.entries.forEach { tab ->
-                NavigationBarItem(
-                    selected = state.tabs.currentTab == tab.root,
-                    onClick = { state.selectTab(tab.root) },
-                    icon = { Icon(tab.icon, contentDescription = null) },
-                    label = { Text(tab.label) },
-                )
-            }
-        }
-    },
-    onBack = { navigator.goBack() },
-)
+val navigation = rememberAppNavigation(entryProviderInstallers, deepLinkDispatcher, startBackStack)
+// … efekty: linki z zewnątrz, reset po wylogowaniu
+AppShell(navigation, modifier)
 ```
 
-Co `AppNavDisplay` robi pod spodem:
+a `AppShell` do:
+
+```kotlin
+val showBottomBar = !state.isFlowOpen
+Column(modifier) {
+    NavigationDisplay(
+        state = state,
+        entryProvider = navigation.entryProvider,
+        modifier = Modifier.weight(1f).then(if (showBottomBar) Modifier.consumeWindowInsets(…) else Modifier),
+        resultEventBus = navigation.resultEventBus,
+        onBack = { navigation.navigator.goBack() },
+    )
+    AnimatedVisibility(visible = showBottomBar, …) { AppBottomBar(state) }
+}
+```
+
+`rememberAppNavigation` (`app/navigation/AppNavigation.kt`) tworzy wszystko w jedynej kolejności, która działa:
+
+1. **nawigator**: feature'y zapamiętują go we wpisach, ale wywołują dopiero w callbackach;
+2. **wpisy**, zbudowane z tym nawigatorem;
+3. **stan**, który pyta wpisy, czy klucz ma `fullScreen()` (także przy podziale stosu startowego);
+4. **podpięcie stanu do nawigatora** (`attach`), zanim jakikolwiek ekran może go wywołać.
+
+Cykl jest tylko między referencjami do obiektów: nawigator musi *istnieć* przed wpisami, ale *działać* zaczyna dopiero po kompozycji. Kolejność jest zamknięta w jednej funkcji, więc nie da się jej przestawić. Stan jest prywatny w `AppNavigator`, a użycie nawigatora przed podpięciem kończy się czytelnym błędem (sprawdza to `AppNavigatorTest`).
+
+Co `NavigationDisplay` robi pod spodem (punkty 1–3) i co dokłada `AppShell` (punkt 4):
 
 1. **Dekoruje każdy stos osobno i cały czas** (`rememberDecoratedNavEntries` + `SaveableStateHolder` + `ViewModelStore` per stos). Ukryta zakładka nie traci stanu, a usunięty ze stosu wpis czyści swój ViewModel.
-2. **Nadaje wpisom `contentKey` z prefiksem stosu** (`tab0/…`, `tab1/…`, `flow/…`). Ten sam klucz na dwóch stosach to dwa różne wpisy dla Nav3 – bez współdzielonego stanu i bez konfliktów animacji.
+2. **Nadaje każdemu wpisowi własną tożsamość** (`contentKey` = stos + pozycja + klucz, np. `tab0/2/DetailsNavKey(itemId=7)`). Ten sam klucz na dwóch stosach albo dwa razy na jednym (Item 7 → 8 → 7) to osobne wpisy – z osobnym ViewModelem i zapisanym stanem. Szczegóły: [navigation-arguments.md, rozdział 5](navigation-arguments.md#5-tożsamość-wpisu--ten-sam-ekran-dwa-razy).
 3. **Pokazuje jeden `NavDisplay`** z listą `zakładka startowa + wybrana zakładka + flow`. Dzięki temu predictive back zawsze podgląda dokładnie to, co pokaże `goBack()`:
    - we flow → poprzedni ekran flow albo zakładkę pod nim,
    - na korzeniu innej zakładki → zakładkę startową,
@@ -364,11 +394,13 @@ PIN w prawdziwej aplikacji: nigdy jawnie – hash z solą (klucz w Keystore) alb
 
 ### 11.2 Ekran pełnoekranowy (flow)
 
-Jak wyżej, plus w `app/navigation/Presentation.kt`:
+Jak wyżej, tylko pierwszy ekran zadania dostaje metadane:
 
 ```kotlin
-internal fun isFullScreen(key: NavKey): Boolean = key is LoginNavKey || key is CheckoutNavKey
+entry<CheckoutNavKey>(metadata = fullScreen()) { ... }
 ```
+
+W `app` nic się nie zmienia.
 
 Na końcu zadania feature woła `navigator.closeFlow()`. Dla linku z zewnątrz: `parentOf(Checkout) = null` otworzy go nad bieżącą zakładką, a `parentOf(Checkout) = CartNavKey` – nad zakładką koszyka.
 
@@ -378,7 +410,7 @@ Na końcu zadania feature woła `navigator.closeFlow()`. Dla linku z zewnątrz: 
 2. Pozycja w `TopLevelTab` (kolejność = kolejność na pasku; pierwsza = startowa).
 3. `parentOf`: korzeń → `null`, ekrany tej zakładki → `SearchNavKey`.
 
-Nic w `core:navigation` ani w `AppNavDisplay` się nie zmienia.
+Nic w `core:navigation` się nie zmienia (`AppShell` czyta zakładki z `TopLevelTab`).
 
 ---
 

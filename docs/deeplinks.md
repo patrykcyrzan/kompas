@@ -150,7 +150,7 @@ project/
 │       ├── BackStackNavigator.kt                  operacje na NavBackStack + rememberBackStackNavigator()
 │       ├── TabbedBackStack.kt                     stos per zakładka (patrz navigation.md)
 │       ├── NavigationState.kt                     zakładki + flow; resetTo(syntetyczny stos)
-│       └── AppNavDisplay.kt                       Nav3 NavDisplay + pasek zakładek
+│       └── NavigationDisplay.kt                   Nav3 NavDisplay (pasek zakładek: app/navigation/AppShell.kt)
 │
 ├── feature/
 │   └── details/

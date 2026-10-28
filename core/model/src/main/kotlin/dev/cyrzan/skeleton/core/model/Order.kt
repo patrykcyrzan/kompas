@@ -1,8 +1,8 @@
 package dev.cyrzan.skeleton.core.model
 
 data class Order(
-    val id: Long,
+    val id: OrderId,
     val title: String,
     val status: String,
-    val itemIds: List<String>,
+    val itemIds: List<ItemId>,
 )
