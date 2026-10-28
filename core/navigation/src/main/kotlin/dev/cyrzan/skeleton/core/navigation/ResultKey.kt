@@ -34,7 +34,7 @@ fun <T : Any> ResultEffect(key: ResultKey<T>, onResult: suspend (T) -> Unit) =
 
 /**
  * The app-wide [ResultEventBus], kept in a ViewModel so a result sent right before a configuration
- * change is not lost. Shared by the navigator (which sends) and [AppNavDisplay] (which provides it to screens).
+ * change is not lost. Shared by the navigator (which sends) and [NavigationDisplay] (which provides it to screens).
  */
 @Composable
 fun rememberAppResultEventBus(): ResultEventBus = viewModel<ResultEventBusHolder>().bus

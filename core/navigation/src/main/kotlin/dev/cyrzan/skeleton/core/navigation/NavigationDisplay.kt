@@ -1,14 +1,5 @@
 package dev.cyrzan.skeleton.core.navigation
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.only
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
@@ -24,7 +15,8 @@ import androidx.navigation3.runtime.result.ResultEventBus
 import androidx.navigation3.ui.NavDisplay
 
 /**
- * Renders [NavigationState] with Nav3: one [NavDisplay] over all stacks, [bottomBar] below it.
+ * Renders [NavigationState] with Nav3: one [NavDisplay] over all stacks. Only the mechanics –
+ * the app shell around it (bottom bar, rail, insets) belongs to the app.
  *
  * - Every stack (each tab and the flow) is decorated all the time, also when hidden, so switching
  *   tabs keeps each screen's saved UI state and ViewModels.
@@ -32,15 +24,13 @@ import androidx.navigation3.ui.NavDisplay
  *   stack (item #7 → item #8 → item #7), is two independent screens with their own state.
  * - The NavDisplay shows `start tab + selected tab + flow`, so predictive back previews exactly what
  *   [NavigationState.goBack] will show (from another tab's root: the start tab).
- * - The bottom bar is hidden while a flow is open.
  * - Results between screens go through Nav3's [ResultEventBus] ([resultEventBus] – the one the
  *   navigator sends to with [Navigator.goBackWithResult]).
  */
 @Composable
-fun AppNavDisplay(
+fun NavigationDisplay(
     state: NavigationState,
     entryProvider: (NavKey) -> NavEntry<NavKey>,
-    bottomBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     resultEventBus: ResultEventBus = rememberAppResultEventBus(),
     onBack: () -> Unit = { state.goBack() },
@@ -56,22 +46,9 @@ fun AppNavDisplay(
         if (tabs.currentTab != tabs.startTab) addAll(tabStacks.getValue(tabs.currentTab))
         addAll(flowStack)
     }
-    val showBottomBar = !state.isFlowOpen
 
     CompositionLocalProvider(LocalResultEventBus provides resultEventBus) {
-        Column(modifier) {
-            NavDisplay(
-                entries = entries,
-                // The bottom bar draws behind the system navigation bar – screens above it must not pad for it again.
-                modifier = Modifier
-                    .weight(1f)
-                    .then(if (showBottomBar) Modifier.consumeWindowInsets(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)) else Modifier),
-                onBack = onBack,
-            )
-            AnimatedVisibility(visible = showBottomBar, enter = expandVertically(), exit = shrinkVertically()) {
-                bottomBar()
-            }
-        }
+        NavDisplay(entries = entries, modifier = modifier, onBack = onBack)
     }
 }
 

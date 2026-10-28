@@ -2,7 +2,7 @@
 
 Ten dokument opisuje, **jak przekazywać argumenty między ekranami i jak zwracać wyniki** w aplikacji wielomodułowej z Navigation 3 i dolnymi zakładkami. Zakres to zwykła nawigacja w aplikacji (klik → ekran), bez linków.
 
-Model stanu (zakładki, flow, `AppNavDisplay`) opisuje [navigation.md](navigation.md), a linki opisuje [deeplinks.md](deeplinks.md).
+Model stanu (zakładki, flow, `NavigationDisplay`) opisuje [navigation.md](navigation.md), a linki opisuje [deeplinks.md](deeplinks.md).
 
 ---
 
@@ -160,7 +160,7 @@ Dlaczego assisted injection, a nie `SavedStateHandle`:
 
 **Problem.** Nav3 przypisuje zapisany stan i ViewModel wpisowi po jego `contentKey`, a domyślnie jest nim sam klucz. Ścieżka *Item 7 → Item 8 → Item 7* kładzie na stos dwa równe klucze `DetailsNavKey(7)`, więc oba wpisy dzieliły **jeden ViewModel i jeden zapisany stan**. Na telefonie było to widać jako „ViewModel #1” na obu ekranach Item 7. W czasie animacji przejścia dwa wpisy z tym samym kluczem mogą też kolidować.
 
-**Rozwiązanie** (`EntryId.kt`, używane przez `AppNavDisplay`):
+**Rozwiązanie** (`EntryId.kt`, używane przez `NavigationDisplay`):
 
 ```
 contentKey = <stos>/<pozycja>/<klucz>        np. tab0/3/DetailsNavKey(itemId=7)
@@ -184,7 +184,7 @@ Wyniki idą przez **wbudowany w Nav3 1.2 `ResultEventBus`** (`androidx.navigatio
 - **`navigator.goBackWithResult(key, value)`**: wysyła wynik i wraca jednym wywołaniem, tak jak cała reszta nawigacji idzie przez `Navigator`.
 - **`ResultEffect(key) { ... }`**: odbiór. Pod spodem to `ResultEffect` z Nav3 z nazwą klucza.
 
-Szyna jest jedna dla całej aplikacji. `SkeletonNavHost` tworzy ją przez `rememberAppResultEventBus()` i przekazuje do `AppNavigator` (wysyła) i do `AppNavDisplay` (udostępnia ekranom).
+Szyna jest jedna dla całej aplikacji. `rememberAppNavigation` tworzy ją przez `rememberAppResultEventBus()` i przekazuje do `AppNavigator` (wysyła) i do `NavigationDisplay` (udostępnia ekranom).
 
 ### 6.1 Kiedy wynik, a kiedy repozytorium
 

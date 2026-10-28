@@ -30,7 +30,8 @@ tabs:  Home    = [Home, Details(7)]
 | `EntryId.kt` | `core:navigation` | tożsamość wpisu (`contentKey`) |
 | `ResultKey.kt` | `core:navigation` | typowany klucz wyniku, `ResultEffect(key)`, `rememberAppResultEventBus()` |
 | `Navigator.kt` | `core:navigation` | interfejs, którego używają feature'y |
-| `AppNavDisplay.kt` | `core:navigation` | renderowanie: dekoratory, jeden `NavDisplay`, pasek zakładek |
+| `NavigationDisplay.kt` | `core:navigation` | renderowanie: dekoratory, tożsamość wpisów, jeden `NavDisplay`; bez layoutu |
+| `AppShell.kt` | `app` | układ aplikacji: `NavigationDisplay` + pasek zakładek, insety |
 | `AppNavigation.kt` | `app` | `rememberAppNavigation` – tworzy wszystko w poprawnej kolejności |
 | `AppNavigator.kt` | `app` | implementacja `Navigator` (+ linki) |
 | `TopLevelTab.kt` | `app` | lista zakładek (korzeń, etykieta, ikona) |
@@ -167,26 +168,32 @@ interface Navigator {
 
 Linki: **External** (z systemu) → `state.resetTo(syntetyczny stos)`, **InApp** → `if (state.current != key) state.navigate(key)`.
 
-## 8. `AppNavDisplay` – renderowanie
+## 8. Renderowanie – `NavigationDisplay` (core) i `AppShell` (app)
 
 ```kotlin
+// core:navigation – tylko mechanika Nav3, bez paska i bez insetów
 @Composable
-fun AppNavDisplay(
+fun NavigationDisplay(
     state: NavigationState,
     entryProvider: (NavKey) -> NavEntry<NavKey>,
-    bottomBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     resultEventBus: ResultEventBus = rememberAppResultEventBus(),
     onBack: () -> Unit = { state.goBack() },
 )
+
+// app – układ aplikacji
+@Composable
+internal fun AppShell(navigation: AppNavigation, modifier: Modifier = Modifier)
 ```
+
+Punkty 1–3 i 6 to `NavigationDisplay`, punkty 4–5 to `AppShell`. Granica: wszystko, co zależy od wyglądu konkretnej aplikacji (pasek czy rail, animacja, insety), jest w `app`.
 
 1. **Własne dekoratory dla każdego stosu** (każda zakładka i flow), składane **cały czas**, także gdy stos jest ukryty. Kolejność: `rememberSaveableStateHolderNavEntryDecorator()` **przed** `rememberViewModelStoreNavEntryDecorator()`. ViewModel wpisu bierze z pierwszego dekoratora zapis stanu dla `SavedStateHandle`. Bez dekoratora ViewModeli wszystkie ekrany dzieliłyby ViewModele aktywności.
 2. **Tożsamość wpisu**: `NavEntry(key, contentKey = "$scope/$index/$key", metadata = entry.metadata) { entry.Content() }`, gdzie `scope` to `"tab$i"` albo `"flow"`. Domyślny `contentKey` (sam klucz) sprawia, że Item 7 → 8 → 7 dzieli jeden ViewModel.
 3. **Jeden `NavDisplay`** z listą: wpisy zakładki startowej + wpisy bieżącej zakładki (jeśli inna niż startowa) + wpisy flow. Dzięki temu predictive back pokazuje dokładnie to, co pokaże `goBack()`.
 4. **Pasek zakładek** jest widoczny, gdy flow jest **pusty**: `AnimatedVisibility(visible = !state.isFlowOpen, enter = expandVertically(), exit = shrinkVertically())`. Warunkiem nie jest „wpis na wierzchu ma `fullScreen()`”, bo dalsze kroki flow nie mają tej metadanej.
 5. **Insety**: `NavDisplay` w `Column` z `Modifier.weight(1f)`, a gdy pasek jest widoczny, także `consumeWindowInsets(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom))`. Pasek rysuje się pod systemowym paskiem nawigacji, więc ekrany nad nim nie mogą dodawać tego odstępu drugi raz.
-6. **Wyniki**: `CompositionLocalProvider(LocalResultEventBus provides resultEventBus)` wokół całości. Szyna jest jedna dla aplikacji i trzymana w ViewModelu (`rememberAppResultEventBus()`), więc wynik wysłany tuż przed rotacją nie ginie.
+6. **Wyniki**: `CompositionLocalProvider(LocalResultEventBus provides resultEventBus)` wokół `NavDisplay`. Szyna jest jedna dla aplikacji i trzymana w ViewModelu (`rememberAppResultEventBus()`), więc wynik wysłany tuż przed rotacją nie ginie.
 
 ## 9. Wyniki
 

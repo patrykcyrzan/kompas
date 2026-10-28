@@ -24,7 +24,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
  *
  * Which keys open a flow is decided by [isFullScreen] – in the app: the [fullScreen] metadata the
  * feature put on its entry. Features only call [navigate].
- * Pure state, no UI – rendered by [AppNavDisplay], unit-testable without Android.
+ * Pure state, no UI – rendered by [NavigationDisplay], unit-testable without Android.
  */
 @Stable
 class NavigationState(

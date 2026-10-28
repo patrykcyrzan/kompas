@@ -1,15 +1,10 @@
 package dev.cyrzan.skeleton.app.navigation
 
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavKey
 import dev.cyrzan.skeleton.app.deeplink.DeepLinkDispatcher
-import dev.cyrzan.skeleton.core.navigation.AppNavDisplay
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,23 +33,5 @@ internal fun SkeletonNavHost(
         isSignedIn.drop(1).filter { signedIn -> !signedIn }.collect { state.resetAll() }
     }
 
-    AppNavDisplay(
-        state = state,
-        entryProvider = navigation.entryProvider,
-        bottomBar = {
-            NavigationBar {
-                TopLevelTab.entries.forEach { tab ->
-                    NavigationBarItem(
-                        selected = state.tabs.currentTab == tab.root,
-                        onClick = { state.selectTab(tab.root) },
-                        icon = { Icon(tab.icon, contentDescription = null) },
-                        label = { Text(tab.label) },
-                    )
-                }
-            }
-        },
-        modifier = modifier,
-        resultEventBus = navigation.resultEventBus,
-        onBack = { navigator.goBack() },
-    )
+    AppShell(navigation, modifier)
 }
