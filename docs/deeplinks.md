@@ -622,7 +622,7 @@ internal object SearchDeepLinkModule {
 }
 ```
 
-Plus standardowo: `SearchEntryProvider`, wpisy w `settings.gradle.kts` i `implementation(projects.feature.search.impl)` w `app/build.gradle.kts`. **Kod deeplinków w `:app` się nie zmienia.**
+Plus standardowo: `SearchEntryProvider`, wpisy w `settings-all.gradle.kts` i `implementation(projects.feature.search.impl)` w `app/build.gradle.kts`. **Kod deeplinków w `:app` się nie zmienia.**
 
 ### 8.3 Otwieranie linku z backendu w feature'rze
 

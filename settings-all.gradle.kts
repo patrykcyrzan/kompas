@@ -1,0 +1,32 @@
+// All modules. Applied by the skeleton.focus plugin (settings.gradle.kts) unless a focus is set.
+
+include(":app")
+
+include(":core:model")
+include(":core:data")
+include(":core:network")
+include(":core:deeplink")
+include(":core:designsystem")
+include(":core:navigation")
+
+// Shared host of the feature sandboxes (:feature:x:sandbox) – never a dependency of :app.
+include(":sandbox")
+
+include(":feature:home:api")
+include(":feature:home:impl")
+include(":feature:details:api")
+include(":feature:details:impl")
+include(":feature:details:sandbox")
+include(":feature:settings:api")
+include(":feature:settings:impl")
+include(":feature:orders:api")
+include(":feature:orders:impl")
+include(":feature:orders:sandbox")
+include(":feature:profile:api")
+include(":feature:profile:impl")
+include(":feature:auth:api")
+include(":feature:auth:impl")
+include(":feature:search:api")
+include(":feature:search:impl")
+include(":feature:support:api")
+include(":feature:support:impl")

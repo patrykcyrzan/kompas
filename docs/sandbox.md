@@ -17,6 +17,25 @@ Gradle kompiluje tylko to, od czego sandbox zależy (ten ficzer, `:core`, potrze
 ani innych `impl`, choć są w `settings.gradle.kts`. Konfigurację projektu przy kolejnych uruchomieniach
 pomija configuration cache.
 
+## Tylko jeden ficzer w Android Studio – focus
+
+Przy dużym projekcie sync Android Studio trwa długo, bo ładuje wszystkie moduły. Focus ładuje tylko
+wybrany moduł i to, od czego zależy:
+
+```bash
+./gradlew :feature:orders:sandbox:focus   # potem Sync – tylko moduły potrzebne sandboxowi Orders
+./gradlew clearFocus                      # potem Sync – znowu cały projekt
+```
+
+- Lista modułów jest liczona z grafu zależności Gradle, przechodnio, ze wszystkich konfiguracji
+  (także testy i KSP). Gdy ficzer dostanie nową zależność, uruchom `focus` jeszcze raz.
+- Działa dla każdego modułu, np. `./gradlew :feature:orders:impl:focus`.
+- Ustawienie jest lokalne: plik `.focus` w katalogu głównym, poza gitem. Gradle wypisuje
+  `Focus: N modules from .focus`, dopóki focus jest ustawiony.
+- Moduły są w `settings-all.gradle.kts`; `settings.gradle.kts` tylko stosuje plugin `skeleton.focus`
+  (`build-logic/focus`), który dołącza albo wszystkie moduły, albo te z `.focus`.
+- Focus na inny moduł: najpierw `clearFocus` – moduł spoza bieżącego focusu nie jest w buildzie.
+
 ## Dlaczego to działa
 
 Architektura już to umożliwia – sandbox niczego w niej nie zmienia:
@@ -65,7 +84,7 @@ fun provideSandbox(session: SessionRepository) = Sandbox(
 2. `src/main/AndroidManifest.xml` z `<application android:name=".XSandboxApp" />`
    i `@HiltAndroidApp class XSandboxApp : Application()` (korzeń Hilta musi być w module aplikacji).
 3. Moduł Hilta z `Sandbox(...)` i scenariuszami.
-4. W `settings.gradle.kts`: `include(":feature:x:sandbox")`.
+4. W `settings-all.gradle.kts`: `include(":feature:x:sandbox")`.
 
 ## Rozszerzanie – przykład `:feature:details:sandbox`
 
@@ -90,6 +109,4 @@ Tą samą drogą: ekran debugowy, podgląd stanów komponentów, własne binding
 
 - Dane to fake'owe repozytoria z `:core:data` – te same co w aplikacji. Gdy dojdą prawdziwe,
   sandbox powinien móc podmienić je na fake'i/mocki (np. osobny moduł bindingów zamiast `DataModule`).
-- Android Studio synchronizuje cały projekt. Jeśli w dużym monolicie sync zacznie boleć, można
-  dołożyć ładowanie tylko wybranego ficzera (np. plugin Focus od Dropboxa) – sandboxy działają bez zmian.
 - CI buduje sandboxy razem z resztą (`./gradlew assembleDebug`), więc nie gniją.
