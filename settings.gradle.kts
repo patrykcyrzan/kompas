@@ -24,7 +24,26 @@ dependencyResolutionManagement {
 rootProject.name = "Kompas"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
-include(":app")
+/*
+ * Focus mode – work on a few features without configuring (or indexing) the rest of the app:
+ *
+ *   local.properties:  kompas.focus=orders            (Android Studio: sync after changing it)
+ *   command line:      ./gradlew -Pkompas.focus=orders :feature:orders:sandbox:installDebug
+ *
+ * Kept: every :core module, every feature's :api (small, and what impls depend on) and, for the
+ * focused features only, :impl and :sandbox. Left out: :app and all other impls – which is safe
+ * because an impl never depends on another impl. Several features: kompas.focus=orders,details
+ */
+val features = listOf("home", "details", "settings", "orders", "profile", "auth", "search", "support")
+
+val focus: Set<String> = (providers.gradleProperty("kompas.focus").orNull ?: localProperty("kompas.focus"))
+    ?.split(',')?.map(String::trim)?.filter(String::isNotEmpty)?.toSet()
+    .orEmpty()
+require(features.containsAll(focus)) { "Unknown feature(s) in kompas.focus: ${focus - features.toSet()}" }
+
+fun isFocused(feature: String) = focus.isEmpty() || feature in focus
+
+if (focus.isEmpty()) include(":app")
 
 include(":core:model")
 include(":core:data")
@@ -33,19 +52,17 @@ include(":core:deeplink")
 include(":core:designsystem")
 include(":core:navigation")
 
-include(":feature:home:api")
-include(":feature:home:impl")
-include(":feature:details:api")
-include(":feature:details:impl")
-include(":feature:settings:api")
-include(":feature:settings:impl")
-include(":feature:orders:api")
-include(":feature:orders:impl")
-include(":feature:profile:api")
-include(":feature:profile:impl")
-include(":feature:auth:api")
-include(":feature:auth:impl")
-include(":feature:search:api")
-include(":feature:search:impl")
-include(":feature:support:api")
-include(":feature:support:impl")
+include(":sandbox")
+
+features.forEach { feature ->
+    include(":feature:$feature:api")
+    if (isFocused(feature)) {
+        include(":feature:$feature:impl")
+        if (settingsDir.resolve("feature/$feature/sandbox/build.gradle.kts").exists()) include(":feature:$feature:sandbox")
+    }
+}
+
+fun localProperty(name: String): String? =
+    providers.fileContents(layout.rootDirectory.file("local.properties")).asText.orNull
+        ?.let { text -> java.util.Properties().apply { load(text.reader()) } }
+        ?.getProperty(name)

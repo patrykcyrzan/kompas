@@ -88,5 +88,6 @@ skeleton-android-library = { id = "skeleton.android.library" }
 skeleton-android-compose = { id = "skeleton.android.compose" }
 skeleton-android-feature-api = { id = "skeleton.android.feature.api" }
 skeleton-android-feature-impl = { id = "skeleton.android.feature.impl" }
+skeleton-android-sandbox = { id = "skeleton.android.sandbox" }
 skeleton-hilt = { id = "skeleton.hilt" }
 skeleton-jvm-library = { id = "skeleton.jvm.library" }
