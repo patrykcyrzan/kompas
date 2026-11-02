@@ -1,4 +1,4 @@
-// Work on it alone: open sandboxes/orders in Android Studio.
+// Run with: ./gradlew :feature:orders:sandbox:installDebug
 plugins {
     alias(libs.plugins.skeleton.android.sandbox)
 }

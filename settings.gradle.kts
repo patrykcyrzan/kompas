@@ -33,7 +33,7 @@ include(":core:deeplink")
 include(":core:designsystem")
 include(":core:navigation")
 
-// Feature sandboxes are built here too (so they never rot); to work on one alone, open sandboxes/<feature>.
+// Shared host of the feature sandboxes (:feature:x:sandbox) – never a dependency of :app.
 include(":sandbox")
 
 include(":feature:home:api")

@@ -1,4 +1,4 @@
-// Work on it alone: open sandboxes/details in Android Studio.
+// Run with: ./gradlew :feature:details:sandbox:installDebug
 plugins {
     alias(libs.plugins.skeleton.android.sandbox)
     // PickerHarnessNavKey lives on the saved back stack.
