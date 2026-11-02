@@ -1,26 +1,32 @@
 # Sandbox – jeden ficzer bez całej aplikacji
 
 Każdy ficzer może mieć mini-aplikację `:feature:x:sandbox`, która uruchamia **tylko jego ekrany** –
-bez `:app`, bez innych `impl`, bez logowania, blokady i deep linków całej aplikacji. Razem z **trybem
-focus** Gradle i Android Studio ładują wtedy tylko to, co potrzebne do tego ficzera.
+bez `:app`, bez innych `impl`, bez logowania, blokady i deep linków całej aplikacji. Do tego osobny,
+**lekki build** w `sandboxes/x/`: Android Studio synchronizuje i indeksuje wtedy tylko moduły tego ficzera.
 
 ## Szybki start
 
-```properties
-# local.properties (nie trafia do gita) – potem Sync w Android Studio
-kompas.focus=orders
-```
-
-W Studio wybierz konfigurację uruchomieniową modułu `feature.orders.sandbox` albo:
+W Android Studio: **File → Open → `sandboxes/orders`** i uruchom konfigurację `feature.orders.sandbox`.
+Z terminala, z katalogu głównego repo:
 
 ```bash
-./gradlew :feature:orders:sandbox:installDebug
-# bez zmiany local.properties:
-./gradlew -Pkompas.focus=orders :feature:orders:sandbox:installDebug
+./gradlew -p sandboxes/orders :feature:orders:sandbox:installDebug
 ```
 
 Sandbox instaluje się obok prawdziwej aplikacji (`dev.cyrzan.skeleton.sandbox.orders`, „Orders sandbox”).
-Usuń `kompas.focus`, żeby wrócić do pełnego projektu.
+Pierwsze otwarcie w Studio tworzy `sandboxes/orders/local.properties` (ścieżka do SDK). Z samego
+terminala skopiuj go z katalogu głównego albo ustaw `ANDROID_HOME`.
+
+## Dwa buildy, te same moduły
+
+- **Pełny build** (katalog główny): wszystkie moduły, także wszystkie sandboxy, więc CI je buduje
+  i nie gniją. W `settings.gradle.kts` to zwykłe `include(...)`, bez żadnej logiki.
+- **Lekki build** (`sandboxes/x/`): własny `settings.gradle.kts` z jawną listą modułów potrzebnych
+  temu sandboxowi. Ścieżki (`:feature:orders:impl`) i katalogi są te same co w pełnym buildzie,
+  więc kod, `build.gradle.kts` i plugin konwencji działają bez zmian.
+
+Lista w lekkim buildzie jest utrzymywana ręcznie. Gdy ficzer zacznie zależeć od nowego modułu,
+Gradle zgłosi „project ... not found” i trzeba go tam dopisać.
 
 ## Dlaczego to działa
 
@@ -31,7 +37,7 @@ Architektura już to umożliwia – sandbox niczego w niej nie zmienia:
 - Ficzery znają się wyłącznie przez klucze z `:api`. Przejście do ekranu innego ficzera
   (np. `DetailsNavKey` z zamówienia) otwiera zaślepkę „Not in this sandbox” z kluczem i argumentami –
   widać, że nawigacja zadziałała i z czym.
-- `impl` nigdy nie zależy od innego `impl`, więc tryb focus może bezpiecznie wyciąć `:app` i pozostałe `impl`.
+- `impl` nigdy nie zależy od innego `impl`, więc lekki build może bezpiecznie pominąć `:app` i pozostałe `impl`.
 
 ## Co jest w środku
 
@@ -39,7 +45,7 @@ Architektura już to umożliwia – sandbox niczego w niej nie zmienia:
 |---|---|
 | `:sandbox` | Wspólna część: `SandboxActivity`, launcher scenariuszy, `SandboxNavigator`, zaślepka, minimalne bindingi, które normalnie daje `:app` |
 | `skeleton.android.sandbox` | Plugin konwencji: aplikacja + Compose + Hilt, `applicationId`, etykieta, zależności na `api`/`impl` ficzera (z jego ścieżki), bez wariantu release |
-| `settings.gradle.kts` | Tryb focus (`kompas.focus`): `impl` i `sandbox` ficzera dołączane tylko, gdy jest w focusie |
+| `sandboxes/x/` | Lekki build: `settings.gradle.kts` z listą modułów + kopie konfiguracji Gradle z katalogu głównego |
 
 Nawigacja to ta sama `NavigationState` / `NavigationDisplay` co w aplikacji, z jedną zakładką
 (launcherem). Ekrany `fullScreen()` otwierają się jako flow, wyniki (`goBackWithResult`) działają,
@@ -71,10 +77,10 @@ fun provideSandbox(session: SessionRepository) = Sandbox(
 2. `src/main/AndroidManifest.xml` z `<application android:name=".XSandboxApp" />`
    i `@HiltAndroidApp class XSandboxApp : Application()` (korzeń Hilta musi być w module aplikacji).
 3. Moduł Hilta z `Sandbox(...)` i scenariuszami.
-4. W `settings.gradle.kts` obok `impl`:
-   ```kotlin
-   if (isFocused("x")) include(":feature:x:impl", ":feature:x:sandbox")
-   ```
+4. W głównym `settings.gradle.kts`: `include(":feature:x:sandbox")`.
+5. Lekki build: skopiuj `sandboxes/orders` do `sandboxes/x`, zmień nazwę i listę modułów
+   w `settings.gradle.kts` (`core`, `:sandbox`, `api`/`impl`/`sandbox` ficzera i `api` ficzerów,
+   do których nawiguje).
 
 ## Rozszerzanie – przykład `:feature:details:sandbox`
 
@@ -84,11 +90,11 @@ bez zmian w `:sandbox`.
 **Prawdziwy sąsiad zamiast zaślepki** – z detali przechodzi się do wyników wyszukiwania:
 
 ```kotlin
-// Opcjonalnie: z kompas.focus=details impl wyszukiwarki nie ma w buildzie i zostaje zaślepka.
-findProject(":feature:search:impl")?.let { implementation(project(it.path)) }
+// feature/details/sandbox/build.gradle.kts
+implementation(projects.feature.search.impl)
 ```
 
-`kompas.focus=details,search` → prawdziwe wyniki wyszukiwania, `kompas.focus=details` → zaślepka, build działa w obu.
+plus `:feature:search:impl` na liście w `sandboxes/details/settings.gradle.kts`.
 
 **Własny ekran tylko w sandboxie** – `ItemPicker` zwraca wynik, ale Details sam go nie otwiera.
 `PickerHarness.kt` dodaje ekran, który go otwiera i pokazuje, co wróciło. Wpina się dokładnie
@@ -101,7 +107,10 @@ Tą samą drogą: ekran debugowy, podgląd stanów komponentów, własne binding
 
 - Dane to fake'owe repozytoria z `:core:data` – te same co w aplikacji. Gdy dojdą prawdziwe,
   sandbox powinien móc podmienić je na fake'i/mocki (np. osobny moduł bindingów zamiast `DataModule`).
-- Nowy ficzer dopisuje się w `settings.gradle.kts` jak dotąd, z `if (isFocused(...))` przy `impl`.
-- Focus dołącza wszystkie `:api`. Przy setkach modułów można liczyć dokładny graf zależności
-  (np. plugin Focus od Dropboxa) – `:api` są jednak lekkie, więc to raczej optymalizacja na później.
-- CI powinno budować sandboxy (`./gradlew assembleDebug` w pełnym trybie to robi), żeby nie gniły.
+- Lekki build ma kopie `gradle.properties`, `build.gradle.kts` (deklaracje pluginów) i
+  `gradle/wrapper`, `gradle/gradle-daemon-jvm.properties` z katalogu głównego. Przy podbiciu
+  Gradle lub zmianie tych plików trzeba zaktualizować też kopie.
+- Oba buildy piszą do tych samych katalogów `build/`: nie uruchamiaj ich jednocześnie. Dzięki
+  lokalnemu build cache przełączanie się między nimi jest szybkie.
+- CI buduje sandboxy w pełnym buildzie (`./gradlew assembleDebug`). Żeby wyłapać nieaktualne listy
+  modułów, warto dodać `./gradlew -p sandboxes/x :feature:x:sandbox:assembleDebug`.

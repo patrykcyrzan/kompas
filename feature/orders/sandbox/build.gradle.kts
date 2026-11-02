@@ -1,4 +1,4 @@
-// Run with: ./gradlew :feature:orders:sandbox:installDebug (add kompas.focus=orders to local.properties to load only this feature).
+// Work on it alone: open sandboxes/orders in Android Studio.
 plugins {
     alias(libs.plugins.skeleton.android.sandbox)
 }

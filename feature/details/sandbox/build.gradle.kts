@@ -1,5 +1,4 @@
-// Run with: ./gradlew -Pkompas.focus=details,search :feature:details:sandbox:installDebug
-// (with just kompas.focus=details, search screens open as placeholders)
+// Work on it alone: open sandboxes/details in Android Studio.
 plugins {
     alias(libs.plugins.skeleton.android.sandbox)
     // PickerHarnessNavKey lives on the saved back stack.
@@ -8,8 +7,7 @@ plugins {
 
 dependencies {
     // A real neighbour instead of the placeholder: category → search results → details again.
-    // Optional: with kompas.focus=details the impl is not in the build and search stays a placeholder.
-    findProject(":feature:search:impl")?.let { implementation(project(it.path)) }
+    implementation(projects.feature.search.impl)
     // A scenario starts on SearchResultsNavKey.
     implementation(projects.feature.search.api)
 
