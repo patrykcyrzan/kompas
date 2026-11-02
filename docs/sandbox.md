@@ -39,7 +39,7 @@ Architektura już to umożliwia – sandbox niczego w niej nie zmienia:
 |---|---|
 | `:sandbox` | Wspólna część: `SandboxActivity`, launcher scenariuszy, `SandboxNavigator`, zaślepka, minimalne bindingi, które normalnie daje `:app` |
 | `skeleton.android.sandbox` | Plugin konwencji: aplikacja + Compose + Hilt, `applicationId`, etykieta, zależności na `api`/`impl` ficzera (z jego ścieżki), bez wariantu release |
-| `settings.gradle.kts` | Tryb focus (`kompas.focus`), automatycznie dołącza `feature/x/sandbox`, jeśli istnieje |
+| `settings.gradle.kts` | Tryb focus (`kompas.focus`): `impl` i `sandbox` ficzera dołączane tylko, gdy jest w focusie |
 
 Nawigacja to ta sama `NavigationState` / `NavigationDisplay` co w aplikacji, z jedną zakładką
 (launcherem). Ekrany `fullScreen()` otwierają się jako flow, wyniki (`goBackWithResult`) działają,
@@ -71,8 +71,10 @@ fun provideSandbox(session: SessionRepository) = Sandbox(
 2. `src/main/AndroidManifest.xml` z `<application android:name=".XSandboxApp" />`
    i `@HiltAndroidApp class XSandboxApp : Application()` (korzeń Hilta musi być w module aplikacji).
 3. Moduł Hilta z `Sandbox(...)` i scenariuszami.
-
-`settings.gradle.kts` sam go znajdzie.
+4. W `settings.gradle.kts` obok `impl`:
+   ```kotlin
+   if (isFocused("x")) include(":feature:x:impl", ":feature:x:sandbox")
+   ```
 
 ## Rozszerzanie – przykład `:feature:details:sandbox`
 
@@ -99,7 +101,7 @@ Tą samą drogą: ekran debugowy, podgląd stanów komponentów, własne binding
 
 - Dane to fake'owe repozytoria z `:core:data` – te same co w aplikacji. Gdy dojdą prawdziwe,
   sandbox powinien móc podmienić je na fake'i/mocki (np. osobny moduł bindingów zamiast `DataModule`).
-- Lista ficzerów w `settings.gradle.kts` jest jawna – nowy ficzer trzeba tam dopisać.
+- Nowy ficzer dopisuje się w `settings.gradle.kts` jak dotąd, z `if (isFocused(...))` przy `impl`.
 - Focus dołącza wszystkie `:api`. Przy setkach modułów można liczyć dokładny graf zależności
   (np. plugin Focus od Dropboxa) – `:api` są jednak lekkie, więc to raczej optymalizacja na później.
 - CI powinno budować sandboxy (`./gradlew assembleDebug` w pełnym trybie to robi), żeby nie gniły.

@@ -34,12 +34,10 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
  * focused features only, :impl and :sandbox. Left out: :app and all other impls – which is safe
  * because an impl never depends on another impl. Several features: kompas.focus=orders,details
  */
-val features = listOf("home", "details", "settings", "orders", "profile", "auth", "search", "support")
-
 val focus: Set<String> = (providers.gradleProperty("kompas.focus").orNull ?: localProperty("kompas.focus"))
     ?.split(',')?.map(String::trim)?.filter(String::isNotEmpty)?.toSet()
     .orEmpty()
-require(features.containsAll(focus)) { "Unknown feature(s) in kompas.focus: ${focus - features.toSet()}" }
+require(focus.all { settingsDir.resolve("feature/$it").isDirectory }) { "Unknown feature(s) in kompas.focus: $focus" }
 
 fun isFocused(feature: String) = focus.isEmpty() || feature in focus
 
@@ -54,13 +52,22 @@ include(":core:navigation")
 
 include(":sandbox")
 
-features.forEach { feature ->
-    include(":feature:$feature:api")
-    if (isFocused(feature)) {
-        include(":feature:$feature:impl")
-        if (settingsDir.resolve("feature/$feature/sandbox/build.gradle.kts").exists()) include(":feature:$feature:sandbox")
-    }
-}
+include(":feature:home:api")
+if (isFocused("home")) include(":feature:home:impl")
+include(":feature:details:api")
+if (isFocused("details")) include(":feature:details:impl", ":feature:details:sandbox")
+include(":feature:settings:api")
+if (isFocused("settings")) include(":feature:settings:impl")
+include(":feature:orders:api")
+if (isFocused("orders")) include(":feature:orders:impl", ":feature:orders:sandbox")
+include(":feature:profile:api")
+if (isFocused("profile")) include(":feature:profile:impl")
+include(":feature:auth:api")
+if (isFocused("auth")) include(":feature:auth:impl")
+include(":feature:search:api")
+if (isFocused("search")) include(":feature:search:impl")
+include(":feature:support:api")
+if (isFocused("support")) include(":feature:support:impl")
 
 fun localProperty(name: String): String? =
     providers.fileContents(layout.rootDirectory.file("local.properties")).asText.orNull
