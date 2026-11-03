@@ -7,6 +7,10 @@ plugins {
 android {
     namespace = "dev.cyrzan.skeleton.app"
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "dev.cyrzan.skeleton"
         versionCode = 1
@@ -24,17 +28,36 @@ android {
 dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.core.navigation)
+    implementation(projects.core.deeplink)
+    implementation(projects.core.data)
+    implementation(projects.core.network)
 
-    // Start destination only.
+    // Tab roots and the deep link hierarchy (which tab a screen belongs to) are app-level decisions.
     implementation(projects.feature.home.api)
+    implementation(projects.feature.details.api)
+    implementation(projects.feature.settings.api)
+    implementation(projects.feature.orders.api)
+    implementation(projects.feature.profile.api)
+    implementation(projects.feature.auth.api)
+    implementation(projects.feature.search.api)
+    implementation(projects.feature.support.api)
 
     // impl modules are wired in purely through Hilt multibindings (Set<EntryProviderInstaller>).
     implementation(projects.feature.home.impl)
     implementation(projects.feature.details.impl)
     implementation(projects.feature.settings.impl)
+    implementation(projects.feature.orders.impl)
+    implementation(projects.feature.profile.impl)
+    implementation(projects.feature.auth.impl)
+    implementation(projects.feature.search.impl)
+    implementation(projects.feature.support.impl)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.navigation3.ui)
-    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.lifecycle.process)
+
+    // Only src/debug references Chucker, so release needs no library-no-op.
+    debugImplementation(libs.chucker)
+
+    testImplementation(libs.junit)
 }

@@ -46,6 +46,10 @@ gradlePlugin {
             id = libs.plugins.skeleton.android.feature.impl.get().pluginId
             implementationClass = "AndroidFeatureImplConventionPlugin"
         }
+        register("androidSandbox") {
+            id = libs.plugins.skeleton.android.sandbox.get().pluginId
+            implementationClass = "AndroidSandboxConventionPlugin"
+        }
         register("hilt") {
             id = libs.plugins.skeleton.hilt.get().pluginId
             implementationClass = "HiltConventionPlugin"

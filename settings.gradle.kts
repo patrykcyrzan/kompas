@@ -13,6 +13,11 @@ pluginManagement {
     }
 }
 
+plugins {
+    // Includes the modules from settings-all.gradle.kts – or only the focused ones (./gradlew :feature:x:sandbox:focus).
+    id("skeleton.focus")
+}
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -23,17 +28,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "Kompas"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
-
-include(":app")
-
-include(":core:model")
-include(":core:data")
-include(":core:designsystem")
-include(":core:navigation")
-
-include(":feature:home:api")
-include(":feature:home:impl")
-include(":feature:details:api")
-include(":feature:details:impl")
-include(":feature:settings:api")
-include(":feature:settings:impl")

@@ -8,3 +8,5 @@ build/
 /captures
 .externalNativeBuild
 .cxx
+# Per-developer module focus (skeleton.focus)
+/.focus

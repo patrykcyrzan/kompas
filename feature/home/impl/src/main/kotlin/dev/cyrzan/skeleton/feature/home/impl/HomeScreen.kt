@@ -7,8 +7,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -26,10 +29,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.cyrzan.skeleton.core.designsystem.theme.SkeletonTheme
 import dev.cyrzan.skeleton.core.model.Item
+import dev.cyrzan.skeleton.core.model.ItemId
+import dev.cyrzan.skeleton.core.model.Promo
 
 @Composable
 internal fun HomeRoute(
     onItemClick: (Item) -> Unit,
+    onPromoClick: (Promo) -> Unit,
+    onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -37,6 +44,8 @@ internal fun HomeRoute(
     HomeScreen(
         uiState = uiState,
         onItemClick = onItemClick,
+        onPromoClick = onPromoClick,
+        onSearchClick = onSearchClick,
         onSettingsClick = onSettingsClick,
     )
 }
@@ -46,6 +55,8 @@ internal fun HomeRoute(
 internal fun HomeScreen(
     uiState: HomeUiState,
     onItemClick: (Item) -> Unit,
+    onPromoClick: (Promo) -> Unit,
+    onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
     Scaffold(
@@ -53,6 +64,9 @@ internal fun HomeScreen(
             TopAppBar(
                 title = { Text("Home") },
                 actions = {
+                    IconButton(onClick = onSearchClick) {
+                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    }
                     IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
@@ -71,7 +85,19 @@ internal fun HomeScreen(
             is HomeUiState.Success -> LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
             ) {
-                items(uiState.items, key = Item::id) { item ->
+                uiState.promo?.let { promo ->
+                    item(key = "promo") {
+                        ListItem(
+                            headlineContent = { Text(promo.title) },
+                            supportingContent = { Text(promo.link) },
+                            colors = ListItemDefaults.colors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            ),
+                            modifier = Modifier.clickable { onPromoClick(promo) },
+                        )
+                    }
+                }
+                items(uiState.items, key = { it.id.value }) { item ->
                     ListItem(
                         headlineContent = { Text(item.title) },
                         supportingContent = { Text(item.description) },
@@ -90,9 +116,12 @@ private fun HomeScreenPreview() {
     SkeletonTheme {
         HomeScreen(
             uiState = HomeUiState.Success(
-                listOf(Item("1", "Item #1", "Description"), Item("2", "Item #2", "Description")),
+                listOf(Item(ItemId("1"), "Item #1", "Description"), Item(ItemId("2"), "Item #2", "Description")),
+                Promo("Featured: Item #7", "https://app.example.com/items/7"),
             ),
             onItemClick = {},
+            onPromoClick = {},
+            onSearchClick = {},
             onSettingsClick = {},
         )
     }

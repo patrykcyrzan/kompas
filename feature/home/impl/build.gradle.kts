@@ -7,6 +7,7 @@ dependencies {
     // Only the *api* of other features – just their navigation keys.
     implementation(projects.feature.details.api)
     implementation(projects.feature.settings.api)
+    implementation(projects.feature.search.api)
 
     implementation(projects.core.data)
 }

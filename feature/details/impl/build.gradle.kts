@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation(projects.feature.details.api)
+    implementation(projects.feature.search.api)
 
     implementation(projects.core.data)
 }
