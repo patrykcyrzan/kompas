@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Its own authority and class: other FileProviders in the app keep their own paths. -->
+        <provider
+            android:name="dev.cyrzan.skeleton.feature.pdfviewer.impl.PdfFileProvider"
+            android:authorities="${applicationId}.pdfviewer.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+    </application>
+
+</manifest>
