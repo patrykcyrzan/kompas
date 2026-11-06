@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     implementation(projects.feature.settings.api)
+    implementation(projects.feature.webpage.api)
 }

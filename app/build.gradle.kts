@@ -42,6 +42,7 @@ dependencies {
     implementation(projects.feature.search.api)
     implementation(projects.feature.support.api)
     implementation(projects.feature.pdfviewer.api)
+    implementation(projects.feature.webpage.api)
 
     // impl modules are wired in purely through Hilt multibindings (Set<EntryProviderInstaller>).
     implementation(projects.feature.home.impl)
@@ -53,6 +54,7 @@ dependencies {
     implementation(projects.feature.search.impl)
     implementation(projects.feature.support.impl)
     implementation(projects.feature.pdfviewer.impl)
+    implementation(projects.feature.webpage.impl)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
@@ -60,7 +61,8 @@ internal fun SandboxHomeScreen(
             items(sandbox.scenarios, key = Scenario::name) { scenario ->
                 ListItem(
                     headlineContent = { Text(scenario.name) },
-                    supportingContent = { Text(scenario.backStack.joinToString(" → ")) },
+                    // A key can carry a long argument (e.g. a whole page as a data: URL).
+                    supportingContent = { Text(scenario.backStack.joinToString(" → "), maxLines = 3, overflow = TextOverflow.Ellipsis) },
                     modifier = Modifier.clickable { onScenarioClick(scenario) },
                 )
             }

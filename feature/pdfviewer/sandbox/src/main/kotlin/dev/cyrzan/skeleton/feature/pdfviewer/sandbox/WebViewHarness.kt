@@ -1,15 +1,13 @@
 package dev.cyrzan.skeleton.feature.pdfviewer.sandbox
 
-import android.annotation.SuppressLint
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import dagger.Binds
@@ -19,6 +17,9 @@ import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
+import dev.cyrzan.skeleton.core.webview.KompasWebView
+import dev.cyrzan.skeleton.core.webview.WebContent
+import dev.cyrzan.skeleton.core.webview.rememberWebViewState
 import dev.cyrzan.skeleton.feature.pdfviewer.api.PdfImporter
 import dev.cyrzan.skeleton.feature.pdfviewer.api.PdfViewerNavKey
 import kotlinx.coroutines.CoroutineScope
@@ -54,23 +55,17 @@ internal interface WebViewHarnessModule {
     fun bindWebViewHarnessEntryProvider(impl: WebViewHarnessEntryProvider): EntryProviderInstaller
 }
 
-@SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun WebViewHarnessScreen(pdfImporter: PdfImporter, onPdf: (PdfViewerNavKey) -> Unit) {
     val scope = rememberCoroutineScope()
-    AndroidView(
+    KompasWebView(
+        content = remember { WebContent.Html(HTML, baseUrl = TRUSTED_ORIGIN) },
+        state = rememberWebViewState(),
         modifier = Modifier.fillMaxSize().safeDrawingPadding(),
-        factory = { context ->
-            WebView(context).apply {
-                webViewClient = WebViewClient()
-                settings.javaScriptEnabled = true
-                setDownloadListener { url, _, contentDisposition, mimeType, _ ->
-                    PdfViewerNavKey.fromDownload(url, contentDisposition, mimeType)?.let(onPdf)
-                }
-                addJavascriptInterface(PdfBridge(this, scope, pdfImporter, onPdf), "KompasPdf")
-                loadDataWithBaseURL(TRUSTED_ORIGIN, HTML, "text/html", "utf-8", TRUSTED_ORIGIN)
-            }
+        onDownload = { download ->
+            PdfViewerNavKey.fromDownload(download.url, download.contentDisposition, download.mimeType)?.let(onPdf)
         },
+        configure = { webView -> webView.addJavascriptInterface(PdfBridge(webView, scope, pdfImporter, onPdf), "KompasPdf") },
     )
 }
 

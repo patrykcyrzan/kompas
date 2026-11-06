@@ -11,13 +11,18 @@ import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
 import dev.cyrzan.skeleton.feature.settings.api.SettingsNavKey
 import dev.cyrzan.skeleton.feature.settings.impl.SettingsScreen
+import dev.cyrzan.skeleton.feature.webpage.api.WebPageNavKey
 import javax.inject.Inject
 
 internal class SettingsEntryProvider @Inject constructor() : EntryProviderInstaller {
 
     override fun EntryProviderScope<NavKey>.install(navigator: Navigator) {
         entry<SettingsNavKey> {
-            SettingsScreen(onBackClick = { navigator.goBack() })
+            SettingsScreen(
+                // Help is a web page – shown in the app, with the app's rules for its links.
+                onHelpClick = { navigator.navigate(WebPageNavKey("https://example.com/", title = "Help")) },
+                onBackClick = { navigator.goBack() },
+            )
         }
     }
 }
