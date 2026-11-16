@@ -31,6 +31,7 @@ dependencies {
     implementation(projects.core.deeplink)
     implementation(projects.core.data)
     implementation(projects.core.network)
+    implementation(projects.core.analytics)
 
     // Tab roots and the deep link hierarchy (which tab a screen belongs to) are app-level decisions.
     implementation(projects.feature.home.api)
@@ -65,4 +66,5 @@ dependencies {
     debugImplementation(libs.chucker)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

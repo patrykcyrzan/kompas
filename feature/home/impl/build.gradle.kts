@@ -10,4 +10,5 @@ dependencies {
     implementation(projects.feature.search.api)
 
     implementation(projects.core.data)
+    implementation(projects.core.analytics)
 }

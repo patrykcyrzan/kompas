@@ -11,6 +11,7 @@ class AppLockTest {
 
     private class FakeSession(signedIn: Boolean) : SessionRepository {
         override val isSignedIn = MutableStateFlow(signedIn)
+        override val userId = MutableStateFlow<String?>(null)
         override fun signIn() { isSignedIn.value = true }
         override fun signOut() { isSignedIn.value = false }
         override fun verifyPin(pin: String) = pin == "1234"

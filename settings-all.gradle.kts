@@ -10,6 +10,7 @@ include(":core:designsystem")
 include(":core:navigation")
 include(":core:webview")
 include(":core:file")
+include(":core:analytics")
 
 // Shared host of the feature sandboxes (:feature:x:sandbox) – never a dependency of :app.
 include(":sandbox")
