@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Its own authority and class: other FileProviders in the app keep their own paths. Keep in sync with AndroidFileStorage.AUTHORITY_SUFFIX. -->
+        <provider
+            android:name="dev.cyrzan.skeleton.core.file.CoreFileProvider"
+            android:authorities="${applicationId}.core.file.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+    </application>
+
+</manifest>

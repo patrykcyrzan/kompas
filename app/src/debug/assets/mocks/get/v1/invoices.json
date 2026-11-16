@@ -1,0 +1,16 @@
+[
+  {
+    "id": 2026101,
+    "number": "FV/2026/10/001 (mock)",
+    "issued_at": "2026-10-31",
+    "amount_minor": 12300,
+    "currency": "PLN"
+  },
+  {
+    "id": 2026091,
+    "number": "FV/2026/09/001 (mock)",
+    "issued_at": "2026-09-30",
+    "amount_minor": 9900,
+    "currency": "PLN"
+  }
+]

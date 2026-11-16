@@ -8,7 +8,7 @@ Ten dokument opisuje, **jak zbudowana jest warstwa HTTP**: co jest w `:core:netw
 
 1. **Konfiguracja sieci siedzi w `:core:network`, nie w `BuildConfig`.** Moduł ma własne source sety `debug`/`release` z `VariantNetworkConfig.kt`; wariant `debug` aplikacji bierze wariant `debug` tego modułu. Featurów moduł nie zna.
 2. **`:app` dokłada narzędzia debug**: dostarcza `ExtraInterceptors` (osobna wersja w `src/debug` i `src/release`).
-3. **Featury nie widzą sieci.** Graf: `feature:*:impl → core:data → core:network`. Serwisy Retrofit i DTO są w `:core:data`, na zewnątrz wychodzą modele z `:core:model`.
+3. **Dane współdzielone idą przez `:core:data`.** Graf: `feature:*:impl → core:data → core:network`; serwisy Retrofit i DTO są w `:core:data`, na zewnątrz wychodzą modele z `:core:model`. Wyjątek: API, którego używa **tylko jeden feature**, może mieszkać w jego `impl/data` (przykład: `feature/invoices`, zob. [feature-structure.md](feature-structure.md)). Gdy drugi feature go potrzebuje – przenieś do `:core:data`.
 4. **Narzędzia debug nie trafiają do release'owego APK** – ani Chucker, ani mocki, ani ekran debug.
 
 ## 2. Moduły i klasy
@@ -73,6 +73,8 @@ GET /v1/orders (500) -> mocks/get/v1/orders.500.json   // wygrywa z orders.json
 Mocki służą do ręcznego klikania. W testach jednostkowych/UI używaj `MockWebServer`.
 
 ## 7. Jak dodać API
+
+API jednego feature'a: jak w `feature/invoices/impl` – `data/remote` (serwis + DTO), `data/` (repozytorium), `di/` (`retrofit.create(...)`). Współdzielone:
 
 1. W `:core:data` dodaj DTO (`@Serializable`) i interfejs Retrofit, np. `OrdersApi`.
 2. Utwórz go w module Hilt `:core:data`: `retrofit.create(OrdersApi::class.java)`.

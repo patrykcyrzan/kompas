@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only this module's cache directory is shareable. Keep in sync with AndroidFileStorage.ROOT_DIR. -->
+<paths>
+    <cache-path name="files" path="files/" />
+</paths>

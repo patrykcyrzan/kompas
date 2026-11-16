@@ -9,6 +9,7 @@ include(":core:deeplink")
 include(":core:designsystem")
 include(":core:navigation")
 include(":core:webview")
+include(":core:file")
 
 // Shared host of the feature sandboxes (:feature:x:sandbox) – never a dependency of :app.
 include(":sandbox")
@@ -37,3 +38,5 @@ include(":feature:pdfviewer:sandbox")
 include(":feature:webpage:api")
 include(":feature:webpage:impl")
 include(":feature:webpage:sandbox")
+include(":feature:invoices:api")
+include(":feature:invoices:impl")

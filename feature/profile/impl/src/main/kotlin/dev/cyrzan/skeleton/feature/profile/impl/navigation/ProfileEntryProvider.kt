@@ -11,6 +11,7 @@ import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
 import dev.cyrzan.skeleton.feature.auth.api.LoginNavKey
 import dev.cyrzan.skeleton.feature.details.api.ItemPickerNavKey
+import dev.cyrzan.skeleton.feature.invoices.api.InvoicesNavKey
 import dev.cyrzan.skeleton.feature.orders.api.OrdersNavKey
 import dev.cyrzan.skeleton.feature.profile.api.AboutNavKey
 import dev.cyrzan.skeleton.feature.profile.api.ProfileNavKey
@@ -31,6 +32,7 @@ internal class ProfileEntryProvider @Inject constructor() : EntryProviderInstall
                 onFavouriteClick = { current -> navigator.navigate(ItemPickerNavKey(selected = current)) },
                 // OrdersNavKey is a tab root: navigate() switches tabs instead of pushing it here.
                 onOrdersClick = { navigator.navigate(OrdersNavKey) },
+                onInvoicesClick = { navigator.navigate(InvoicesNavKey) },
                 onSettingsClick = { navigator.navigate(SettingsNavKey) },
                 onSupportClick = { navigator.navigate(SupportRequestNavKey()) },
                 onAboutClick = { navigator.navigate(AboutNavKey) },

@@ -55,6 +55,7 @@ dependencies {
     implementation(projects.feature.support.impl)
     implementation(projects.feature.pdfviewer.impl)
     implementation(projects.feature.webpage.impl)
+    implementation(projects.feature.invoices.impl)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
