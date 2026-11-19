@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import dagger.hilt.android.AndroidEntryPoint
+import dev.cyrzan.skeleton.app.analytics.ScreenTracker
 import dev.cyrzan.skeleton.app.deeplink.DeepLinkDispatcher
 import dev.cyrzan.skeleton.app.lock.AppLock
 import dev.cyrzan.skeleton.app.lock.LockScreen
@@ -39,6 +40,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     internal lateinit var appLock: AppLock
+
+    @Inject
+    internal lateinit var screenTracker: ScreenTracker
 
     /** Links arriving while the Activity is alive (singleTop -> onNewIntent). */
     private val externalLinks = Channel<String>(Channel.CONFLATED)
@@ -69,6 +73,7 @@ class MainActivity : ComponentActivity() {
                         startBackStack = startBackStack,
                         externalLinks = links,
                         isSignedIn = session.isSignedIn,
+                        screenTracker = screenTracker,
                         modifier = Modifier
                             .fillMaxSize()
                             .then(if (isLocked) Modifier.clearAndSetSemantics {} else Modifier),

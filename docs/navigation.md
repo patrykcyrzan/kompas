@@ -94,10 +94,11 @@ AppShell  (app, Compose)                         ← układ aplikacji: ekrany + 
 | `AppNavigator` | `app` | Implementacja `Navigator`; linki InApp/External → `NavigationState`. |
 | `TopLevelTab` | `app` | Lista zakładek (korzeń, etykieta, ikona) w kolejności wyświetlania. |
 | `fullScreen()` | `core:navigation`, używane w `impl` feature'a | Metadane wpisu: ekran otwiera flow nad zakładkami. |
+| `screenName()` | `core:navigation`, używane w `impl` feature'a | Metadane wpisu: nazwa ekranu w analityce. `screen_viewed` wysyła `ScreenTracker` w `app` – feature nie trackuje wyświetleń sam. |
 | `parentOf(destination)` | `app` (`DeepLinkConfig.kt`) | Hierarchia ekranów – do której zakładki należy ekran otwarty z linku z zewnątrz. |
 | `rememberAppNavigation` | `app` | Tworzy nawigator, wpisy i stan w jedynej poprawnej kolejności. |
 
-Feature'y używają tylko `Navigator`, `fullScreen()`, `ResultKey` / `ResultEffect` i `EntryProviderInstaller`. `NavigationState`, `TabbedBackStack`, `BackStackNavigator` i `NavigationDisplay` są publiczne, bo potrzebuje ich `app`, ale feature ich nie importuje – inaczej omija reguły z `Navigator` (flow, linki, sesja).
+Feature'y używają tylko `Navigator`, `fullScreen()`, `screenName()`, `ResultKey` / `ResultEffect` i `EntryProviderInstaller`. `NavigationState`, `TabbedBackStack`, `BackStackNavigator` i `NavigationDisplay` są publiczne, bo potrzebuje ich `app`, ale feature ich nie importuje – inaczej omija reguły z `Navigator` (flow, linki, sesja).
 | `SkeletonNavHost` | `app` | Skleja wszystko: nawigacja, linki, reset po wylogowaniu, pasek zakładek. |
 | `AppLock`, `LockScreen` | `app` (`lock/`) | Blokada po powrocie z tła. |
 

@@ -3,9 +3,6 @@ package dev.cyrzan.skeleton.feature.home.impl
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dev.cyrzan.skeleton.core.analytics.Analytics
-import dev.cyrzan.skeleton.core.analytics.AnalyticsEvent
-import dev.cyrzan.skeleton.core.analytics.anonymous
 import dev.cyrzan.skeleton.core.data.repository.ItemsRepository
 import dev.cyrzan.skeleton.core.model.Item
 import dev.cyrzan.skeleton.core.model.Promo
@@ -18,12 +15,7 @@ import javax.inject.Inject
 @HiltViewModel
 internal class HomeViewModel @Inject constructor(
     itemsRepository: ItemsRepository,
-    analytics: Analytics,
 ) : ViewModel() {
-
-    init {
-        analytics.track(AnalyticsEvent("screen_viewed", listOf(anonymous("screen", "home"))))
-    }
 
     val uiState: StateFlow<HomeUiState> = combine(
         itemsRepository.observeItems(),
