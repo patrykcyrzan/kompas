@@ -12,6 +12,7 @@ import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkRoute
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
+import dev.cyrzan.skeleton.core.navigation.screenName
 import dev.cyrzan.skeleton.feature.details.api.DetailsNavKey
 import dev.cyrzan.skeleton.feature.search.api.SearchDeepLinks
 import dev.cyrzan.skeleton.feature.search.api.SearchNavKey
@@ -23,7 +24,7 @@ import javax.inject.Inject
 internal class SearchEntryProvider @Inject constructor() : EntryProviderInstaller {
 
     override fun EntryProviderScope<NavKey>.install(navigator: Navigator) {
-        entry<SearchNavKey> { key ->
+        entry<SearchNavKey>(metadata = screenName("search")) { key ->
             SearchScreen(
                 initial = key.initial,
                 // The finished criteria are the argument of the next screen.
@@ -31,7 +32,7 @@ internal class SearchEntryProvider @Inject constructor() : EntryProviderInstalle
                 onBackClick = { navigator.goBack() },
             )
         }
-        entry<SearchResultsNavKey> { key ->
+        entry<SearchResultsNavKey>(metadata = screenName("search_results")) { key ->
             SearchResultsRoute(
                 navKey = key,
                 onItemClick = { itemId -> navigator.navigate(DetailsNavKey(itemId)) },

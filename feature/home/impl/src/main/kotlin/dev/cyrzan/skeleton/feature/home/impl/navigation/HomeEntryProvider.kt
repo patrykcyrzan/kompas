@@ -11,6 +11,7 @@ import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
 import dev.cyrzan.skeleton.core.navigation.OpenLinkResult
+import dev.cyrzan.skeleton.core.navigation.screenName
 import dev.cyrzan.skeleton.feature.details.api.DetailsNavKey
 import dev.cyrzan.skeleton.feature.home.api.HomeNavKey
 import dev.cyrzan.skeleton.feature.home.impl.HomeRoute
@@ -21,7 +22,7 @@ import javax.inject.Inject
 internal class HomeEntryProvider @Inject constructor() : EntryProviderInstaller {
 
     override fun EntryProviderScope<NavKey>.install(navigator: Navigator) {
-        entry<HomeNavKey> {
+        entry<HomeNavKey>(metadata = screenName("home")) {
             val uriHandler = LocalUriHandler.current
             HomeRoute(
                 onItemClick = { item -> navigator.navigate(DetailsNavKey(item.id)) },

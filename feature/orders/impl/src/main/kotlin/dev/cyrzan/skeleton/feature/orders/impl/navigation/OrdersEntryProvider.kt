@@ -9,6 +9,7 @@ import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
+import dev.cyrzan.skeleton.core.navigation.screenName
 import dev.cyrzan.skeleton.feature.details.api.DetailsNavKey
 import dev.cyrzan.skeleton.feature.orders.api.OrderDetailsNavKey
 import dev.cyrzan.skeleton.feature.orders.api.OrdersNavKey
@@ -20,10 +21,10 @@ import javax.inject.Inject
 internal class OrdersEntryProvider @Inject constructor() : EntryProviderInstaller {
 
     override fun EntryProviderScope<NavKey>.install(navigator: Navigator) {
-        entry<OrdersNavKey> {
+        entry<OrdersNavKey>(metadata = screenName("orders")) {
             OrdersRoute(onOrderClick = { order -> navigator.navigate(OrderDetailsNavKey(order.id)) })
         }
-        entry<OrderDetailsNavKey> { key ->
+        entry<OrderDetailsNavKey>(metadata = screenName("order_details")) { key ->
             OrderDetailsRoute(
                 navKey = key,
                 // Another feature's screen, pushed on the *current* tab.

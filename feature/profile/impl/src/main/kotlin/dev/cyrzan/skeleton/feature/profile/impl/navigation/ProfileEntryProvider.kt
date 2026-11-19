@@ -9,6 +9,7 @@ import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
+import dev.cyrzan.skeleton.core.navigation.screenName
 import dev.cyrzan.skeleton.feature.auth.api.LoginNavKey
 import dev.cyrzan.skeleton.feature.details.api.ItemPickerNavKey
 import dev.cyrzan.skeleton.feature.invoices.api.InvoicesNavKey
@@ -24,7 +25,7 @@ import javax.inject.Inject
 internal class ProfileEntryProvider @Inject constructor() : EntryProviderInstaller {
 
     override fun EntryProviderScope<NavKey>.install(navigator: Navigator) {
-        entry<ProfileNavKey> {
+        entry<ProfileNavKey>(metadata = screenName("profile")) {
             ProfileRoute(
                 // A full-screen key: opens above the tabs (decided by the app).
                 onSignInClick = { navigator.navigate(LoginNavKey) },
@@ -38,7 +39,7 @@ internal class ProfileEntryProvider @Inject constructor() : EntryProviderInstall
                 onAboutClick = { navigator.navigate(AboutNavKey) },
             )
         }
-        entry<AboutNavKey> {
+        entry<AboutNavKey>(metadata = screenName("about")) {
             AboutScreen(onBackClick = { navigator.goBack() })
         }
     }

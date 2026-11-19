@@ -9,6 +9,7 @@ import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
+import dev.cyrzan.skeleton.core.navigation.screenName
 import dev.cyrzan.skeleton.feature.pdfviewer.api.PdfViewerNavKey
 import dev.cyrzan.skeleton.feature.pdfviewer.impl.PdfViewerRoute
 import javax.inject.Inject
@@ -16,7 +17,7 @@ import javax.inject.Inject
 internal class PdfViewerEntryProvider @Inject constructor() : EntryProviderInstaller {
 
     override fun EntryProviderScope<NavKey>.install(navigator: Navigator) {
-        entry<PdfViewerNavKey> { key ->
+        entry<PdfViewerNavKey>(metadata = screenName("pdf_viewer")) { key ->
             PdfViewerRoute(navKey = key, onBackClick = { navigator.goBack() })
         }
     }

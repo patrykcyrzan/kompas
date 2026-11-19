@@ -9,6 +9,7 @@ import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
+import dev.cyrzan.skeleton.core.navigation.screenName
 import dev.cyrzan.skeleton.feature.invoices.api.InvoicesNavKey
 import dev.cyrzan.skeleton.feature.invoices.impl.list.InvoicesRoute
 import javax.inject.Inject
@@ -16,7 +17,7 @@ import javax.inject.Inject
 internal class InvoicesEntryProvider @Inject constructor() : EntryProviderInstaller {
 
     override fun EntryProviderScope<NavKey>.install(navigator: Navigator) {
-        entry<InvoicesNavKey> {
+        entry<InvoicesNavKey>(metadata = screenName("invoices")) {
             InvoicesRoute(onBackClick = { navigator.goBack() })
         }
     }

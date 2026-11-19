@@ -10,6 +10,7 @@ import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
 import dev.cyrzan.skeleton.core.navigation.fullScreen
+import dev.cyrzan.skeleton.core.navigation.screenName
 import dev.cyrzan.skeleton.feature.support.api.SupportRequestNavKey
 import dev.cyrzan.skeleton.feature.support.impl.SupportRoute
 import javax.inject.Inject
@@ -18,7 +19,7 @@ internal class SupportEntryProvider @Inject constructor() : EntryProviderInstall
 
     override fun EntryProviderScope<NavKey>.install(navigator: Navigator) {
         // One entry for the whole 3-step form, opened above the tabs.
-        entry<SupportRequestNavKey>(metadata = fullScreen()) { key ->
+        entry<SupportRequestNavKey>(metadata = fullScreen() + screenName("support_request")) { key ->
             // Leaving the flow clears the form's ViewModel – the next form starts empty.
             SupportRoute(navKey = key, onClose = { navigator.closeFlow() })
         }

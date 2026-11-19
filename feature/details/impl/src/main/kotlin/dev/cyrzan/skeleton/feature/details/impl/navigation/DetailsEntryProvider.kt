@@ -9,6 +9,7 @@ import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
+import dev.cyrzan.skeleton.core.navigation.screenName
 import dev.cyrzan.skeleton.feature.details.api.DetailsNavKey
 import dev.cyrzan.skeleton.feature.details.api.ItemPickerNavKey
 import dev.cyrzan.skeleton.feature.details.api.ItemPickerResult
@@ -21,7 +22,7 @@ import javax.inject.Inject
 internal class DetailsEntryProvider @Inject constructor() : EntryProviderInstaller {
 
     override fun EntryProviderScope<NavKey>.install(navigator: Navigator) {
-        entry<DetailsNavKey> { key ->
+        entry<DetailsNavKey>(metadata = screenName("details")) { key ->
             DetailsRoute(
                 navKey = key,
                 // The same screen again, with other arguments – pushed on the current stack.
@@ -31,7 +32,7 @@ internal class DetailsEntryProvider @Inject constructor() : EntryProviderInstall
                 onBackClick = { navigator.goBack() },
             )
         }
-        entry<ItemPickerNavKey> { key ->
+        entry<ItemPickerNavKey>(metadata = screenName("item_picker")) { key ->
             ItemPickerRoute(
                 selected = key.selected,
                 // Back to the screen that opened the picker, with the choice.

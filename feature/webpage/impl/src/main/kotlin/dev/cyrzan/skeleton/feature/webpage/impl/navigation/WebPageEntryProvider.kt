@@ -9,6 +9,7 @@ import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.multibindings.IntoSet
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
 import dev.cyrzan.skeleton.core.navigation.Navigator
+import dev.cyrzan.skeleton.core.navigation.screenName
 import dev.cyrzan.skeleton.feature.webpage.api.WebPageNavKey
 import dev.cyrzan.skeleton.feature.webpage.impl.WebPageScreen
 import javax.inject.Inject
@@ -16,7 +17,7 @@ import javax.inject.Inject
 internal class WebPageEntryProvider @Inject constructor() : EntryProviderInstaller {
 
     override fun EntryProviderScope<NavKey>.install(navigator: Navigator) {
-        entry<WebPageNavKey> { key ->
+        entry<WebPageNavKey>(metadata = screenName("web_page")) { key ->
             WebPageScreen(
                 navKey = key,
                 openLink = navigator::openLink,
