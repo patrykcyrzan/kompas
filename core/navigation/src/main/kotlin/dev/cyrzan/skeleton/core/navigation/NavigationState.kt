@@ -41,6 +41,19 @@ class NavigationState(
     val current: NavKey? get() = flow.lastOrNull() ?: tabs.current
 
     /**
+     * Identity of the screen the user sees – the same one [NavigationDisplay] keys its state by.
+     * Unlike [current] it changes also when an equal key becomes visible as another entry
+     * (the same screen on another tab), so it tells a new screen view from a recomposition.
+     */
+    val currentEntryId: String?
+        get() {
+            flow.lastOrNull()?.let { return entryId(FLOW_SCOPE, flow.lastIndex, it) }
+            val tabIndex = tabs.tabs.indexOf(tabs.currentTab)
+            val stack = tabs.stackOf(tabs.currentTab).backStack
+            return stack.lastOrNull()?.let { entryId(tabScope(tabIndex), stack.lastIndex, it) }
+        }
+
+    /**
      * - tab root: closes any flow and opens that tab at its root,
      * - full-screen key, or any key while a flow is open: pushed onto the flow,
      * - anything else: pushed on the selected tab.

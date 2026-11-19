@@ -27,6 +27,7 @@ tabs:  Home    = [Home, Details(7)]
 | `TabbedBackStack.kt` | `core:navigation` | stosy zakładek + indeks wybranej |
 | `NavigationState.kt` | `core:navigation` | zakładki + flow; wszystkie reguły; czysty stan bez UI |
 | `FullScreen.kt` | `core:navigation` | metadane wpisu `fullScreen()` / `isFullScreen()` |
+| `ScreenName.kt` | `core:navigation` | metadane wpisu `screenName(name)` – nazwa ekranu w analityce |
 | `EntryId.kt` | `core:navigation` | tożsamość wpisu (`contentKey`) |
 | `ResultKey.kt` | `core:navigation` | typowany klucz wyniku, `ResultEffect(key)`, `rememberAppResultEventBus()` |
 | `Navigator.kt` | `core:navigation` | interfejs, którego używają feature'y |
@@ -227,9 +228,10 @@ Pod spodem jest `ResultEventBus` z Nav3 1.2: wynik jest buforowany per klucz i t
 | Test | Sprawdza |
 |---|---|
 | `TabbedBackStackTest` | push na wybraną zakładkę, przełączanie z zachowaniem historii, ponowny wybór → korzeń, korzeń zakładki przełącza zamiast dokładać kopię, wstecz do zakładki startowej, `resetTo` |
-| `NavigationStateTest` | flow nad zakładkami i przechwytywanie kolejnych pushów, korzeń zakładki zamyka flow, `splitBackStack`, `resetTo`, `resetAll` |
+| `NavigationStateTest` | flow nad zakładkami i przechwytywanie kolejnych pushów, korzeń zakładki zamyka flow, `splitBackStack`, `resetTo`, `resetAll`, `currentEntryId` zgodny z tożsamością wpisu |
 | `EntryIdTest` | równe klucze na jednym stosie to różne wpisy; tożsamość stabilna |
 | `FullScreenTest` | `fullScreen()` / `isFullScreen()`, łączenie z innymi metadanymi |
+| `ScreenNameTest` | `screenName()` tylko gdy zadeklarowane, łączenie z `fullScreen()` |
 | `AppNavigatorTest` | użycie przed `attach` → czytelny błąd; po `attach` steruje stanem |
 
 ## 12. Kryteria odbioru (na urządzeniu)

@@ -5,6 +5,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -94,5 +95,27 @@ class NavigationStateTest {
         assertEquals(listOf(home), stack(home))
         assertEquals(listOf(orders), stack(orders))
         assertTrue(state.flowBackStack.isEmpty())
+    }
+
+    @Test
+    fun `current entry id matches the entry identity of the visible screen`() {
+        assertEquals(entryId(tabScope(0), 0, home), state.currentEntryId)
+
+        state.navigate(details)
+        assertEquals(entryId(tabScope(0), 1, details), state.currentEntryId)
+
+        state.navigate(login)
+        assertEquals(entryId(FLOW_SCOPE, 0, login), state.currentEntryId)
+    }
+
+    @Test
+    fun `an equal key on another tab is another entry`() {
+        state.navigate(details)
+        val onHome = state.currentEntryId
+        state.selectTab(orders)
+        state.navigate(details)
+
+        assertEquals(details, state.current)
+        assertNotEquals(onHome, state.currentEntryId)
     }
 }
