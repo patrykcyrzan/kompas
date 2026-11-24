@@ -13,6 +13,7 @@ import dev.cyrzan.skeleton.core.navigation.screenName
 import dev.cyrzan.skeleton.feature.auth.api.LoginNavKey
 import dev.cyrzan.skeleton.feature.details.api.ItemPickerNavKey
 import dev.cyrzan.skeleton.feature.invoices.api.InvoicesNavKey
+import dev.cyrzan.skeleton.feature.legacy.api.LegacyNavKey
 import dev.cyrzan.skeleton.feature.orders.api.OrdersNavKey
 import dev.cyrzan.skeleton.feature.profile.api.AboutNavKey
 import dev.cyrzan.skeleton.feature.profile.api.ProfileNavKey
@@ -34,6 +35,8 @@ internal class ProfileEntryProvider @Inject constructor() : EntryProviderInstall
                 // OrdersNavKey is a tab root: navigate() switches tabs instead of pushing it here.
                 onOrdersClick = { navigator.navigate(OrdersNavKey) },
                 onInvoicesClick = { navigator.navigate(InvoicesNavKey) },
+                // A screen of :app, not of a feature – opened by its key all the same.
+                onLegacyClick = { navigator.navigate(LegacyNavKey) },
                 onSettingsClick = { navigator.navigate(SettingsNavKey) },
                 onSupportClick = { navigator.navigate(SupportRequestNavKey()) },
                 onAboutClick = { navigator.navigate(AboutNavKey) },

@@ -1,0 +1,8 @@
+{
+  "min_app_version": "0.1.0",
+  "chat": {
+    "enabled": true,
+    "channel_id": "kompas-support",
+    "welcome_message": "Hi! Chat enabled by the app config (mocks/get/v1/config.json)."
+  }
+}

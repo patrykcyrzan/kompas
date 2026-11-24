@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -21,6 +22,8 @@ import dev.cyrzan.skeleton.app.navigation.SkeletonNavHost
 import dev.cyrzan.skeleton.core.data.repository.SessionRepository
 import dev.cyrzan.skeleton.core.designsystem.theme.SkeletonTheme
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
+import dev.cyrzan.skeleton.feature.chat.api.ChatButton
+import dev.cyrzan.skeleton.feature.chat.api.LocalChatButton
 import dev.cyrzan.skeleton.feature.home.api.HomeNavKey
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -44,6 +47,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     internal lateinit var screenTracker: ScreenTracker
 
+    @Inject
+    lateinit var chatButton: ChatButton
+
     /** Links arriving while the Activity is alive (singleTop -> onNewIntent). */
     private val externalLinks = Channel<String>(Channel.CONFLATED)
 
@@ -62,23 +68,26 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             SkeletonTheme {
-                // Collected also while stopped: a lock set in the background is composed before the first frame back.
-                val isLocked by appLock.isLocked.collectAsState()
-                Box(Modifier.fillMaxSize()) {
-                    // Stays composed under the lock: back stacks, ViewModels and scroll positions survive.
-                    // Links arriving while locked are applied underneath and visible after unlocking.
-                    SkeletonNavHost(
-                        entryProviderInstallers = entryProviderInstallers,
-                        deepLinkDispatcher = deepLinkDispatcher,
-                        startBackStack = startBackStack,
-                        externalLinks = links,
-                        isSignedIn = session.isSignedIn,
-                        screenTracker = screenTracker,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .then(if (isLocked) Modifier.clearAndSetSemantics {} else Modifier),
-                    )
-                    if (isLocked) LockScreen(appLock)
+                // Every feature's screens show the chat button from :feature:chat:impl without depending on it.
+                CompositionLocalProvider(LocalChatButton provides chatButton) {
+                    // Collected also while stopped: a lock set in the background is composed before the first frame back.
+                    val isLocked by appLock.isLocked.collectAsState()
+                    Box(Modifier.fillMaxSize()) {
+                        // Stays composed under the lock: back stacks, ViewModels and scroll positions survive.
+                        // Links arriving while locked are applied underneath and visible after unlocking.
+                        SkeletonNavHost(
+                            entryProviderInstallers = entryProviderInstallers,
+                            deepLinkDispatcher = deepLinkDispatcher,
+                            startBackStack = startBackStack,
+                            externalLinks = links,
+                            isSignedIn = session.isSignedIn,
+                            screenTracker = screenTracker,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(if (isLocked) Modifier.clearAndSetSemantics {} else Modifier),
+                        )
+                        if (isLocked) LockScreen(appLock)
+                    }
                 }
             }
         }

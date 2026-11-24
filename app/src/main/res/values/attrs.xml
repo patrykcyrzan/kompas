@@ -1,0 +1,8 @@
+<resources>
+    <declare-styleable name="ChatButtonView">
+        <!-- Optional: reported as `source` of chat_button_clicked. -->
+        <attr name="chatSource" format="string" />
+        <!-- How far above the bottom the button may go (default 16dp), e.g. above the screen's bottom buttons. -->
+        <attr name="chatBottomPadding" format="dimension" />
+    </declare-styleable>
+</resources>

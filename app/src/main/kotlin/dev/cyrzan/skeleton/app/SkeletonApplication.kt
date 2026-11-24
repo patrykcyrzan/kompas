@@ -8,8 +8,11 @@ import dagger.hilt.android.HiltAndroidApp
 import androidx.lifecycle.lifecycleScope
 import dev.cyrzan.skeleton.app.analytics.AnalyticsIdentity
 import dev.cyrzan.skeleton.app.analytics.ScreenTracker
+import dev.cyrzan.skeleton.app.config.AppConfigLoader
 import dev.cyrzan.skeleton.app.lock.AppLock
 import dev.cyrzan.skeleton.core.analytics.Analytics
+import dev.cyrzan.skeleton.core.startup.AppInitializer
+import dev.cyrzan.skeleton.core.startup.initAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -31,10 +34,18 @@ class SkeletonApplication : Application() {
     @Inject
     internal lateinit var screenTracker: ScreenTracker
 
+    // Each module's startup work (SDKs...), contributed @IntoSet – the app does not know what is inside.
+    @Inject
+    lateinit var initializers: Set<@JvmSuppressWildcards AppInitializer>
+
+    @Inject
+    internal lateinit var appConfigLoader: AppConfigLoader
+
     private val inForeground = MutableStateFlow(false)
 
     override fun onCreate() {
         super.onCreate()
+        initializers.initAll(this)
         // The process lifecycle is never destroyed, so its scope lives as long as the app.
         analyticsIdentity.start(ProcessLifecycleOwner.get().lifecycleScope)
         // The user sees a screen only in the foreground and not behind the lock.
@@ -50,6 +61,8 @@ class SkeletonApplication : Application() {
                     // Lock first: a screen that comes back behind the lock must not count as seen.
                     appLock.onAppForegrounded()
                     inForeground.value = true
+                    // Fresh config on every return: features (e.g. the chat) can be switched on and off remotely.
+                    owner.lifecycleScope.launch { appConfigLoader.load() }
                 }
 
                 override fun onStop(owner: LifecycleOwner) {
