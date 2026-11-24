@@ -25,6 +25,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.cyrzan.skeleton.core.model.ItemId
 import dev.cyrzan.skeleton.core.model.Order
+import dev.cyrzan.skeleton.feature.chat.api.LocalChatButton
 import dev.cyrzan.skeleton.feature.orders.api.OrderDetailsNavKey
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,22 +35,25 @@ internal fun OrdersRoute(
     viewModel: OrdersViewModel = hiltViewModel(),
 ) {
     val orders by viewModel.orders.collectAsStateWithLifecycle()
-    Scaffold(topBar = { TopAppBar(title = { Text("Orders") }) }) { padding ->
-        val list = orders
-        if (list == null) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        } else {
-            LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-                items(list, key = { it.id.value }) { order ->
-                    ListItem(
-                        headlineContent = { Text(order.title) },
-                        supportingContent = { Text("${order.status} · ${order.itemIds.size} item(s)") },
-                        modifier = Modifier.clickable { onOrderClick(order) },
-                    )
-                    HorizontalDivider()
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(topBar = { TopAppBar(title = { Text("Orders") }) }) { padding ->
+            val list = orders
+            if (list == null) {
+                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            } else {
+                LazyColumn(Modifier.fillMaxSize().padding(padding)) {
+                    items(list, key = { it.id.value }) { order ->
+                        ListItem(
+                            headlineContent = { Text(order.title) },
+                            supportingContent = { Text("${order.status} · ${order.itemIds.size} item(s)") },
+                            modifier = Modifier.clickable { onOrderClick(order) },
+                        )
+                        HorizontalDivider()
+                    }
                 }
             }
         }
+        LocalChatButton.current.Overlay(source = "orders_list")
     }
 }
 
@@ -65,43 +69,46 @@ internal fun OrderDetailsRoute(
     ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Order #${navKey.orderId}") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        when (val state = uiState) {
-            OrderDetailsUiState.Loading -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-            OrderDetailsUiState.NotFound -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Order not found")
-            }
-            is OrderDetailsUiState.Success -> LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-                item { ListItem(headlineContent = { Text("Status: ${state.order.status}") }) }
-                items(state.order.itemIds) { itemId ->
-                    ListItem(
-                        headlineContent = { Text("Item #$itemId") },
-                        supportingContent = { Text("Tap to open the item") },
-                        modifier = Modifier.clickable { onItemClick(itemId) },
-                    )
-                    HorizontalDivider()
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Order #${navKey.orderId}") },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            when (val state = uiState) {
+                OrderDetailsUiState.Loading -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
-                item {
-                    ListItem(
-                        headlineContent = { Text("Report a problem") },
-                        supportingContent = { Text("3-step form, prefilled with this order") },
-                        modifier = Modifier.clickable(onClick = onReportProblemClick),
-                    )
+                OrderDetailsUiState.NotFound -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    Text("Order not found")
+                }
+                is OrderDetailsUiState.Success -> LazyColumn(Modifier.fillMaxSize().padding(padding)) {
+                    item { ListItem(headlineContent = { Text("Status: ${state.order.status}") }) }
+                    items(state.order.itemIds) { itemId ->
+                        ListItem(
+                            headlineContent = { Text("Item #$itemId") },
+                            supportingContent = { Text("Tap to open the item") },
+                            modifier = Modifier.clickable { onItemClick(itemId) },
+                        )
+                        HorizontalDivider()
+                    }
+                    item {
+                        ListItem(
+                            headlineContent = { Text("Report a problem") },
+                            supportingContent = { Text("3-step form, prefilled with this order") },
+                            modifier = Modifier.clickable(onClick = onReportProblemClick),
+                        )
+                    }
                 }
             }
         }
+        LocalChatButton.current.Overlay(source = "order_details")
     }
 }

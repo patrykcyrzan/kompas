@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
@@ -16,6 +17,7 @@ import dev.cyrzan.skeleton.core.data.repository.SessionRepository
 import dev.cyrzan.skeleton.core.deeplink.DeepLinkResolver
 import dev.cyrzan.skeleton.core.designsystem.theme.SkeletonTheme
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
+import dev.cyrzan.skeleton.core.navigation.LocalNavigator
 import dev.cyrzan.skeleton.core.navigation.NavigationDisplay
 import dev.cyrzan.skeleton.core.navigation.isFullScreen
 import dev.cyrzan.skeleton.core.navigation.rememberAppResultEventBus
@@ -76,11 +78,13 @@ private fun SandboxNavHost(
     val state = rememberNavigationState(tabs, tabs) { key -> entries(key).metadata.isFullScreen() }
     remember(navigator, state) { navigator.attach(state) }
 
-    NavigationDisplay(
-        state = state,
-        entryProvider = entries,
-        modifier = Modifier.fillMaxSize(),
-        resultEventBus = resultEventBus,
-        onBack = { navigator.goBack() },
-    )
+    CompositionLocalProvider(LocalNavigator provides navigator) {
+        NavigationDisplay(
+            state = state,
+            entryProvider = entries,
+            modifier = Modifier.fillMaxSize(),
+            resultEventBus = resultEventBus,
+            onBack = { navigator.goBack() },
+        )
+    }
 }

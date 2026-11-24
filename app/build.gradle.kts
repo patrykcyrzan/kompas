@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.skeleton.android.application)
     alias(libs.plugins.skeleton.android.compose)
     alias(libs.plugins.skeleton.hilt)
+    // The global config response (config/AppConfigDto).
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -32,6 +34,7 @@ dependencies {
     implementation(projects.core.data)
     implementation(projects.core.network)
     implementation(projects.core.analytics)
+    implementation(projects.core.startup)
 
     // Tab roots and the deep link hierarchy (which tab a screen belongs to) are app-level decisions.
     implementation(projects.feature.home.api)
@@ -44,6 +47,10 @@ dependencies {
     implementation(projects.feature.support.api)
     implementation(projects.feature.pdfviewer.api)
     implementation(projects.feature.webpage.api)
+    // MainActivity provides LocalChatButton to every screen.
+    implementation(projects.feature.chat.api)
+    // Its screens (XML) still live here, in :app – the "monolith".
+    implementation(projects.feature.legacy.api)
 
     // impl modules are wired in purely through Hilt multibindings (Set<EntryProviderInstaller>).
     implementation(projects.feature.home.impl)
@@ -57,6 +64,7 @@ dependencies {
     implementation(projects.feature.pdfviewer.impl)
     implementation(projects.feature.webpage.impl)
     implementation(projects.feature.invoices.impl)
+    implementation(projects.feature.chat.impl)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

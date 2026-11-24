@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A layout as an old XML Fragment has it: the content, and the chat overlay as the last (top-most) child. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="This screen is an XML layout from :app – no Compose code here.\n\nThe chat button is a ChatButtonView tag covering the whole screen: drag the button anywhere, and the button below still takes taps through the overlay. app:chatBottomPadding keeps the chat button above it."
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="?android:attr/textColorPrimary" />
+
+    <Button
+        android:id="@+id/legacy_bottom_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_margin="16dp"
+        android:text="Tap me (under the overlay)" />
+
+    <!-- Last child = on top. Covers the screen but only the chat button itself takes touches. -->
+    <dev.cyrzan.skeleton.app.legacy.chat.ChatButtonView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:chatBottomPadding="88dp"
+        app:chatSource="legacy_screen" />
+
+</FrameLayout>

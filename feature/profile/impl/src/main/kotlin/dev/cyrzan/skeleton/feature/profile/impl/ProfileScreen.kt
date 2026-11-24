@@ -31,6 +31,7 @@ internal fun ProfileRoute(
     onFavouriteClick: (current: ItemId?) -> Unit,
     onOrdersClick: () -> Unit,
     onInvoicesClick: () -> Unit,
+    onLegacyClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onSupportClick: () -> Unit,
     onAboutClick: () -> Unit,
@@ -48,6 +49,7 @@ internal fun ProfileRoute(
         onSignOutClick = viewModel::signOut,
         onOrdersClick = onOrdersClick,
         onInvoicesClick = onInvoicesClick,
+        onLegacyClick = onLegacyClick,
         onSettingsClick = onSettingsClick,
         onSupportClick = onSupportClick,
         onAboutClick = onAboutClick,
@@ -64,6 +66,7 @@ internal fun ProfileScreen(
     onSignOutClick: () -> Unit,
     onOrdersClick: () -> Unit,
     onInvoicesClick: () -> Unit,
+    onLegacyClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onSupportClick: () -> Unit,
     onAboutClick: () -> Unit,
@@ -79,6 +82,7 @@ internal fun ProfileScreen(
             ProfileRow("Favourite item", favourite?.let { "Item #$it" } ?: "None – pick one (returns a result)", onFavouriteClick)
             ProfileRow("My orders", "Switches to the Orders tab", onOrdersClick)
             ProfileRow("Invoices", "MVI example: list + PDF download", onInvoicesClick)
+            ProfileRow("Legacy screen", "XML layout with the chat button as a View", onLegacyClick)
             ProfileRow("Settings", "Pushed on the Profile tab", onSettingsClick)
             ProfileRow("Contact support", "3-step form on one screen", onSupportClick)
             ProfileRow("About", "Pushed on the Profile tab", onAboutClick)

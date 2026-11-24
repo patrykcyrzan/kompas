@@ -2,6 +2,7 @@ package dev.cyrzan.skeleton.app.navigation
 
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -10,6 +11,7 @@ import dev.cyrzan.skeleton.app.analytics.Screen
 import dev.cyrzan.skeleton.app.analytics.ScreenTracker
 import dev.cyrzan.skeleton.app.deeplink.DeepLinkDispatcher
 import dev.cyrzan.skeleton.core.navigation.EntryProviderInstaller
+import dev.cyrzan.skeleton.core.navigation.LocalNavigator
 import dev.cyrzan.skeleton.core.navigation.screenName
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,7 +53,9 @@ internal fun SkeletonNavHost(
             }
     }
 
-    AppShell(navigation, modifier)
+    CompositionLocalProvider(LocalNavigator provides navigator) {
+        AppShell(navigation, modifier)
+    }
 }
 
 private const val TAG = "SkeletonNavHost"

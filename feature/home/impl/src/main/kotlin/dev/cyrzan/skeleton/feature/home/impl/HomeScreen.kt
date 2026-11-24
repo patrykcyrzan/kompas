@@ -31,6 +31,7 @@ import dev.cyrzan.skeleton.core.designsystem.theme.SkeletonTheme
 import dev.cyrzan.skeleton.core.model.Item
 import dev.cyrzan.skeleton.core.model.ItemId
 import dev.cyrzan.skeleton.core.model.Promo
+import dev.cyrzan.skeleton.feature.chat.api.LocalChatButton
 
 @Composable
 internal fun HomeRoute(
@@ -59,54 +60,57 @@ internal fun HomeScreen(
     onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Home") },
-                actions = {
-                    IconButton(onClick = onSearchClick) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
-                    }
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        when (uiState) {
-            HomeUiState.Loading -> Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
-
-            is HomeUiState.Success -> LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
-            ) {
-                uiState.promo?.let { promo ->
-                    item(key = "promo") {
-                        ListItem(
-                            headlineContent = { Text(promo.title) },
-                            supportingContent = { Text(promo.link) },
-                            colors = ListItemDefaults.colors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            ),
-                            modifier = Modifier.clickable { onPromoClick(promo) },
-                        )
-                    }
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Home") },
+                    actions = {
+                        IconButton(onClick = onSearchClick) {
+                            Icon(Icons.Default.Search, contentDescription = "Search")
+                        }
+                        IconButton(onClick = onSettingsClick) {
+                            Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            when (uiState) {
+                HomeUiState.Loading -> Box(
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
                 }
-                items(uiState.items, key = { it.id.value }) { item ->
-                    ListItem(
-                        headlineContent = { Text(item.title) },
-                        supportingContent = { Text(item.description) },
-                        modifier = Modifier.clickable { onItemClick(item) },
-                    )
-                    HorizontalDivider()
+
+                is HomeUiState.Success -> LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                ) {
+                    uiState.promo?.let { promo ->
+                        item(key = "promo") {
+                            ListItem(
+                                headlineContent = { Text(promo.title) },
+                                supportingContent = { Text(promo.link) },
+                                colors = ListItemDefaults.colors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                ),
+                                modifier = Modifier.clickable { onPromoClick(promo) },
+                            )
+                        }
+                    }
+                    items(uiState.items, key = { it.id.value }) { item ->
+                        ListItem(
+                            headlineContent = { Text(item.title) },
+                            supportingContent = { Text(item.description) },
+                            modifier = Modifier.clickable { onItemClick(item) },
+                        )
+                        HorizontalDivider()
+                    }
                 }
             }
         }
+        LocalChatButton.current.Overlay(source = "home")
     }
 }
 

@@ -10,6 +10,7 @@ dependencies {
     implementation(projects.feature.details.api)
     implementation(projects.feature.support.api)
     implementation(projects.feature.invoices.api)
+    implementation(projects.feature.legacy.api)
 
     implementation(projects.core.data)
 }
